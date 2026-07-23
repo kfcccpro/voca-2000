@@ -163,6 +163,9 @@ display:flex;flex-direction:column;align-items:center;justify-content:center;gap
 .daycell.done::before{content:"✓";position:absolute;top:6px;right:8px;color:var(--green);font-weight:800;font-size:12px}
 .daycell.partial .dn{color:var(--iris2)}
 .daycell.today-mark{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,229,212,.3)}
+.daycell.locked{opacity:.32;cursor:not-allowed;filter:grayscale(.55)}
+.daycell.locked:hover{transform:none;border-color:var(--line);background:var(--panel)}
+.daycell.locked::after{content:"🔒";position:absolute;top:6px;right:7px;font-size:11px;opacity:.8}
 
 /* quiz */
 .q-stage{max-width:680px;margin:0 auto}
@@ -365,11 +368,14 @@ let ROLE=null; // 'learner' | 'admin'
 /* ===== state ===== */
 const KEY='wm2000_v3';
 const defState=()=>({
- seen:{},mastered:{},wrong:{},fav:{},dayDone:{},
+ seen:{},mastered:{},wrong:{},fav:{},dayDone:{},dayRecords:{},
+ progress:{currentDay:1,lastCompletedDay:0,lastCompletedAt:'',lastActivityAt:''},
+ meta:{schemaVersion:7,lastSavedAt:''},
  streak:0,lastDate:'',xp:0,
  quizStat:{done:0,correct:0},
  history:[],daily:{},dayLog:{},
  sessions:[],   // 로그인/시험 세션 기록 {login, logout, dur, day, type, correct, total}
+ adminActions:[], // 관리자 강제 수료 등 관리 이력
  // 관리자 설정
  config:{
   quizMode:'mc',        // 'mc'(객관식) | 'sa'(주관식)
@@ -379,14 +385,49 @@ const defState=()=>({
  },
  wrongDetail:{}  // day -> [{id, wrongCount}]  A4 오답표기용
 });
-let S;
-function load(){try{S=JSON.parse(localStorage.getItem(KEY))||defState();}catch(e){S=defState();}
+let S;let storageOK=true;
+function normalizeState(){
  const d=defState();for(const k in d)if(!(k in S))S[k]=d[k];
  for(const k in d.config)if(S.config[k]===undefined)S.config[k]=d.config[k];
+ if(!S.dayRecords||typeof S.dayRecords!=='object')S.dayRecords={};
+ if(!S.progress||typeof S.progress!=='object')S.progress={...d.progress};
+ if(!S.meta||typeof S.meta!=='object')S.meta={...d.meta};
+ if(!Array.isArray(S.adminActions))S.adminActions=[];
  // 마이그레이션: 옛 기본값(10문제) 사용자는 전체 출제로 전환
- if(!S._migrated_v4){if(S.config.quizCount===10)S.config.quizCount=0;S._migrated_v4=true;save();}}
-function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+ if(!S._migrated_v4){if(S.config.quizCount===10)S.config.quizCount=0;S._migrated_v4=true;}
+ // v6: DAY 완료 여부를 단어 seen과 분리하고, 기존 시험 기록을 DAY 완료 기록으로 복구
+ if((S.meta.schemaVersion||0)<6){
+  for(let day=1;day<=DAYS;day++){
+   const full=wordsOf(day).length>0&&wordsOf(day).every(w=>S.seen[w[0]]);
+   const hadQuiz=(S.dayLog[day]&&S.dayLog[day].quizzes>0)||S.sessions.some(x=>+x.day===day&&+x.total>0);
+   if(S.dayDone[day]||full||hadQuiz){
+    S.dayDone[day]=true;
+    const old=S.dayRecords[day]||{};
+    S.dayRecords[day]={...old,status:'completed',completedAt:old.completedAt||(S.dayLog[day]&&S.dayLog[day].lastStudied)||'' ,migrated:true};
+   }
+  }
+  S.meta.schemaVersion=6;
+ }
+ // v7: 관리자 강제 수료 이력 및 완료 방식 기록 지원
+ if((S.meta.schemaVersion||0)<7){
+  if(!Array.isArray(S.adminActions))S.adminActions=[];
+  S.meta.schemaVersion=7;
+ }
+ S.progress.currentDay=currentDay();
+ let last=0;for(let day=1;day<=DAYS;day++)if(S.dayDone[day])last=day;
+ S.progress.lastCompletedDay=Math.max(S.progress.lastCompletedDay||0,last);
+}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))||defState();}catch(e){S=defState();storageOK=false;}
+ normalizeState();save();}
+function save(){try{
+ S.meta=S.meta||{};S.meta.lastSavedAt=new Date().toISOString();
+ const payload=JSON.stringify(S);localStorage.setItem(KEY,payload);
+ if(localStorage.getItem(KEY)!==payload)throw new Error('저장 검증 실패');
+ storageOK=true;return true;
+ }catch(e){storageOK=false;console.error('진도 저장 실패',e);return false;}}
 load();
+window.addEventListener('beforeunload',save);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});
 
 /* ===== 로그인 세션 추적 ===== */
 let loginTime=null;
@@ -421,10 +462,54 @@ const masteredCount=()=>Object.values(S.mastered).filter(v=>v>=2).length;
 const wrongList=()=>Object.keys(S.wrong).filter(id=>S.wrong[id]>0).map(id=>byId[+id]).filter(Boolean);
 const favList=()=>Object.keys(S.fav).filter(id=>S.fav[id]).map(id=>byId[+id]).filter(Boolean);
 function dayProgress(d){const ws=wordsOf(d);return{seen:ws.filter(w=>S.seen[w[0]]).length,total:ws.length};}
-function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(dayProgress(d).seen<dayProgress(d).total)return d;}return DAYS;}
-function currentDay(){ // 학습자 "며칠째": 완료한 day + 1, 최대 30
- let done=0;for(let d=1;d<=DAYS;d++){if(dayProgress(d).seen===dayProgress(d).total)done=d;else break;}
- return Math.min(done+1,DAYS);}
+function isDayDone(d){return !!(S.dayDone&&S.dayDone[d]);}
+function completedDayCount(){let n=0;for(let d=1;d<=DAYS;d++)if(isDayDone(d))n++;return n;}
+function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++)if(!isDayDone(d))return d;return DAYS;}
+function currentDay(){return firstUnfinishedDay();}
+function startDay(day,method){
+ const now=new Date().toISOString(),r=S.dayRecords[day]||{};
+ if(!isDayDone(day))S.dayRecords[day]={...r,status:'in_progress',startedAt:r.startedAt||now,lastActivityAt:now,lastMethod:method};
+ S.progress.currentDay=currentDay();S.progress.lastActivityAt=now;save();
+}
+function completeDay(day,detail={}){
+ const now=new Date().toISOString(),r=S.dayRecords[day]||{};
+ S.dayDone[day]=true;
+ S.dayRecords[day]={...r,...detail,status:'completed',startedAt:r.startedAt||now,completedAt:now,lastActivityAt:now};
+ S.dayLog[day]=S.dayLog[day]||{firstDone:today(),quizzes:0,bestPct:0};
+ S.dayLog[day].completedAt=now;S.dayLog[day].lastStudied=today();
+ S.progress.lastCompletedDay=Math.max(S.progress.lastCompletedDay||0,day);
+ S.progress.lastCompletedAt=now;S.progress.currentDay=currentDay();S.progress.lastActivityAt=now;save();
+}
+
+/* ===== 관리자 DAY 강제 수료 ===== */
+function adminForceCompleteThrough(){
+ if(ROLE!=='admin'){toast('관리자 권한이 필요합니다');return;}
+ const sel=$('#adminForceDay');
+ const through=sel?Math.max(1,Math.min(DAYS,parseInt(sel.value,10)||1)):currentDay();
+ const targets=[];for(let d=1;d<=through;d++)if(!isDayDone(d))targets.push(d);
+ if(!targets.length){toast(`DAY ${through}까지 이미 수료 완료 상태입니다`);return;}
+ const msg=`DAY 1부터 DAY ${through}까지 미완료 ${targets.length}개 DAY를 관리자 권한으로 수료 완료 처리합니다.\n\n단어 학습률·정답률·오답 기록은 변경하지 않고, DAY 완료 상태와 다음 DAY 개방만 처리합니다.\n\n계속하시겠습니까?`;
+ if(!window.confirm(msg))return;
+ const now=new Date().toISOString();
+ targets.forEach(day=>{
+  const r=S.dayRecords[day]||{};
+  S.dayDone[day]=true;
+  S.dayRecords[day]={...r,status:'completed',startedAt:r.startedAt||now,completedAt:now,lastActivityAt:now,
+   completionMethod:'admin_force',forced:true,forcedAt:now,forcedBy:'admin',forceScope:`DAY 1~${through}`};
+  S.dayLog[day]=S.dayLog[day]||{firstDone:today(),quizzes:0,bestPct:0};
+  S.dayLog[day].completedAt=now;S.dayLog[day].lastStudied=today();S.dayLog[day].adminForced=true;
+ });
+ S.adminActions.unshift({type:'force_complete_through',throughDay:through,days:targets.slice(),at:now,actor:'admin'});
+ if(S.adminActions.length>100)S.adminActions.length=100;
+ S.progress.lastCompletedDay=Math.max(S.progress.lastCompletedDay||0,through);
+ S.progress.lastCompletedAt=now;S.progress.currentDay=currentDay();S.progress.lastActivityAt=now;
+ if(save()){
+  toast(`✓ DAY ${through}까지 관리자 강제 수료 완료`);
+  renderAdmin();renderSidebar();
+ }else toast('⚠ 저장 실패 · 브라우저 저장 설정 확인');
+}
+function forcedCompletionCount(){let n=0;for(let d=1;d<=DAYS;d++){const r=S.dayRecords[d]||{};if(isDayDone(d)&&(r.completionMethod==='admin_force'||r.forced))n++;}return n;}
+function lastAdminActionText(){const a=S.adminActions&&S.adminActions[0];if(!a)return '관리자 처리 이력 없음';return `${fmtFull(a.at)} · DAY ${a.throughDay}까지 · ${a.days.length}개 DAY 처리`;}
 
 /* ===== 한글 유사도 (주관식 채점) ===== */
 // 뜻 문자열을 정답 후보 배열로 분해: 콤마/대괄호/괄호 분리
@@ -524,13 +609,14 @@ function go(tab){cur=tab;document.querySelectorAll('.view').forEach(v=>v.classLi
 
 /* ===== HOME ===== */
 function renderHome(){ROLE==='learner'?renderHomeLearner():renderHomeAdmin();}
-function renderHomeLearner(){const cd=currentDay();const dp=dayProgress(cd);const pct=Math.round(seenCount()/TOTAL*100);
+function renderHomeLearner(){const cd=currentDay();const dp=dayProgress(cd);const pct=Math.round(seenCount()/TOTAL*100);const doneN=completedDayCount();
  $('#pgSub').textContent=`오늘은 ${cd}일째`;
  $('#vHome').innerHTML=`
   <div class="day-hero">
     <div class="eyebrow">TODAY · ${cd}일째</div>
     <div class="daynum grad-txt">DAY ${cd}</div>
-    <div class="dtot">오늘 학습할 단어 ${dp.total}개 · 지금 바로 시험 보기</div>
+    <div class="dtot">오늘 학습할 단어 ${dp.total}개 · DAY 완료 시 다음 DAY로 자동 이동</div>
+    <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:-10px 0 22px;position:relative;z-index:2"><span class="chip ${storageOK?'green':'pink'}">${storageOK?'✓ 진도 자동 저장 정상':'⚠ 저장 오류'}</span><span class="chip cyan">완료 ${doneN}/${DAYS}</span></div>
     <button class="btn btn-hero lg cta" onclick="startTodayQuiz(${cd})">▶ 오늘의 시험 시작</button>
   </div>
   <div class="grid g-3">
@@ -576,7 +662,7 @@ function renderHomeAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const tot
 
 /* ===== STUDY (DAY grid + 플래시) ===== */
 let studyDayPick=null;
-function renderStudy(){const cd=currentDay();const doneN=Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length;
+function renderStudy(){const cd=currentDay();const doneN=completedDayCount();
  $('#vStudy').innerHTML=`
   <div class="card" style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
     <div><div style="font-family:var(--disp);font-weight:700;font-size:18px">DAY 선택</div><div class="mini">DAY를 누르면 바로 시험이 시작돼요 · 오늘 <span class="num">${cd}</span>일째 · 완료 <span class="num">${doneN}</span>/${DAYS}</div></div>
@@ -584,12 +670,13 @@ function renderStudy(){const cd=currentDay();const doneN=Object.keys(S.dayDone).
   </div><div class="daygrid" id="dayGrid"></div>`;
  const g=$('#dayGrid');
  for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);let cls='daycell';
-  if(dp.seen===dp.total)cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';
-  const c=el('button',cls,`<div class="dn">${d}</div><div class="dp">${dp.seen}/${dp.total}</div><span class="ring" style="width:${dp.seen/dp.total*100}%"></span>`);
-  c.onclick=()=>openDayPick(d);g.appendChild(c);}
+  if(isDayDone(d))cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';if(d>cd&&!isDayDone(d))cls+=' locked';
+  const c=el('button',cls,`<div class="dn">${d}</div><div class="dp">${isDayDone(d)?'완료':dp.seen+'/'+dp.total}</div><span class="ring" style="width:${dp.total?dp.seen/dp.total*100:0}%"></span>`);
+  if(d>cd&&!isDayDone(d)){c.disabled=true;c.title=`DAY ${cd} 완료 후 열립니다`;}else c.onclick=()=>openDayPick(d);g.appendChild(c);}
 }
 // DAY 클릭 → 시험 바로 or 카드학습 선택 (기본은 시험 직행 유도)
 function openDayPick(day){
+ const cd=currentDay();if(day>cd&&!isDayDone(day)){toast(`DAY ${cd}를 먼저 완료하세요`);go('Study');return;}
  stage('vStudy',`<div style="max-width:480px;margin:40px auto 0;text-align:center">
    <div style="font-family:var(--disp);font-weight:700;font-size:54px;letter-spacing:-2px" class="grad-txt">DAY ${day}</div>
    <div class="mini" style="margin:4px 0 28px">${wordsOf(day).length}단어 · 시험은 한 번에 쭉 이어집니다</div>
@@ -600,7 +687,7 @@ function openDayPick(day){
 }
 let SESS=null;let saEnterHandler=null;
 function stage(id,html){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#'+id).classList.add('on');$('#'+id).innerHTML=html;window.scrollTo(0,0);}
-function startFlash(day){touchStreak();SESS={day,list:wordsOf(day),i:0};$('#pgTitle').textContent=`DAY ${day} 학습`;$('#pgSub').textContent='카드로 먼저 익히기';renderFlash();}
+function startFlash(day){touchStreak();startDay(day,'flash');SESS={day,list:wordsOf(day),i:0};$('#pgTitle').textContent=`DAY ${day} 학습`;$('#pgSub').textContent='카드로 먼저 익히기';renderFlash();}
 function renderFlash(){const {list,i,day}=SESS;const w=list[i];const fav=S.fav[w[0]];
  stage('vStudy',`<div style="max-width:640px;margin:0 auto">
    <div class="q-head"><button class="btn btn-ghost sm" onclick="go('Study')">← 나가기</button><div class="q-prog">DAY ${day} · <span class="num">${i+1}/${list.length}</span></div></div>
@@ -624,7 +711,7 @@ function renderFlash(){const {list,i,day}=SESS;const w=list[i];const fav=S.fav[w
 }
 function flip(){$('#flash').classList.toggle('flip');}
 function fNext(e){const w=SESS.list[SESS.i];if(!S.seen[w[0]]){S.seen[w[0]]=true;markDaily('studied');}save();
- if(SESS.i===SESS.list.length-1){const day=SESS.day;S.dayDone[day]=true;save();startTodayQuiz(day);return;}SESS.i++;renderFlash();}
+ if(SESS.i===SESS.list.length-1){const day=SESS.day;const r=S.dayRecords[day]||{};S.dayRecords[day]={...r,status:'studied',studyCompletedAt:new Date().toISOString(),lastActivityAt:new Date().toISOString()};save();startTodayQuiz(day);return;}SESS.i++;renderFlash();}
 function fPrev(){if(SESS.i>0){SESS.i--;renderFlash();}}
 
 /* ===== QUIZ ===== */
@@ -655,13 +742,15 @@ function pickDayForQuiz(){const cd=currentDay();
 }
 // 오늘의 시험: 설정 기반 문항 생성
 function startTodayQuiz(day){touchStreak();
+ const assignedDay=currentDay();if(day>assignedDay&&!isDayDone(day)){toast(`DAY ${assignedDay}를 먼저 완료하세요`);go('Study');return;}
+ startDay(day,'quiz');
  const pool=wordsOf(day);const N=S.config.quizCount>0?Math.min(S.config.quizCount,pool.length):pool.length;
  const chosen=shuffle(pool).slice(0,N);
  // 영한/한영 방향 배정
  const enCnt=Math.round(N*S.config.enPct/100);
  const dirs=shuffle([...Array(enCnt).fill('en'),...Array(N-enCnt).fill('ko')]);
  const qs=shuffle(chosen).map((w,i)=>({w,dir:dirs[i]||'en'}));
- SESS={mode:S.config.quizMode,day,qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now()};
+ SESS={mode:S.config.quizMode,day,qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),assignedAtStart:day===assignedDay&&!isDayDone(day)};
  $('#pgTitle').textContent='시험';$('#pgSub').textContent=`DAY ${day}`;
  if(SESS.mode==='sa')renderSA();else renderMC();
 }
@@ -737,11 +826,12 @@ function finishQuiz(){unbindKeys();if(saEnterHandler){document.removeEventListen
  S.dayLog[day]=S.dayLog[day]||{firstDone:today(),quizzes:0,bestPct:0};S.dayLog[day].quizzes++;S.dayLog[day].bestPct=Math.max(S.dayLog[day].bestPct||0,pct);S.dayLog[day].lastStudied=today();
  S.history.unshift({date:new Date().toISOString(),type:mode==='sa'?'주관식':'시험',day,correct,total:qs.length,xp:gained});if(S.history.length>200)S.history.length=200;
  recordQuizSession(day,mode==='sa'?'주관식':'객관식',correct,qs.length,startMs);
- save();
+ if(SESS.assignedAtStart)completeDay(day,{completionMethod:'quiz',quizMode:mode,correct,total:qs.length,pct});else save();
  const em=pct>=90?'🏆':pct>=70?'🎯':pct>=50?'💪':'📚';if(pct>=70)confetti(innerWidth/2,innerHeight*0.35,120);
  stage('vQuiz',`<div class="result"><div class="em">${em}</div><div class="pct grad-txt">${pct}%</div>
    <div class="score"><span class="num">${correct}</span> / <span class="num">${qs.length}</span> 정답</div>
-   <div style="display:flex;justify-content:center;gap:10px;margin:14px 0 22px"><span class="chip lime">+${gained} XP</span>${maxCombo>=2?`<span class="chip pink">🔥 ${maxCombo} 콤보</span>`:''}${wrongThis.length?`<span class="chip gray">오답 ${wrongThis.length}</span>`:`<span class="chip green">퍼펙트</span>`}</div>
+   <div style="display:flex;justify-content:center;gap:10px;margin:14px 0 14px"><span class="chip lime">+${gained} XP</span>${maxCombo>=2?`<span class="chip pink">🔥 ${maxCombo} 콤보</span>`:''}${wrongThis.length?`<span class="chip gray">오답 ${wrongThis.length}</span>`:`<span class="chip green">퍼펙트</span>`}</div>
+   ${SESS.assignedAtStart?`<div class="card" style="padding:14px 18px;margin:0 0 18px;border-color:rgba(43,227,138,.45);background:rgba(43,227,138,.08)"><b style="color:var(--green)">✓ DAY ${day} 완료 저장</b><div class="mini" style="margin-top:3px">다음 학습은 DAY ${currentDay()}입니다.</div></div>`:''}
    <button class="btn btn-hero wfull" style="margin-bottom:12px" onclick="go('Home')">홈으로</button>
    ${wrongThis.length?`<button class="btn btn-ghost wfull" onclick="go('Review')">오답노트 (${wrongThis.length})</button>`:''}
  </div>`);
@@ -882,17 +972,34 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
     <div class="akpi"><div class="lbl">정답률</div><div class="v">${accur}%</div></div>
     <div class="akpi"><div class="lbl">학습한 날</div><div class="v grad-pink">${activeDays}</div></div>
   </div>
+  <div class="card" style="margin-bottom:24px;border-color:rgba(255,180,67,.45);background:linear-gradient(145deg,rgba(255,180,67,.09),var(--panel))">
+    <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px">
+        <div style="font-family:var(--disp);font-weight:700;font-size:18px;margin-bottom:5px">🛡️ 관리자 강제 수료 관리</div>
+        <div class="mini" style="line-height:1.75">실제 진행한 DAY가 기록되지 않았을 때 선택한 DAY까지 수료 완료로 복구합니다.<br><b style="color:var(--amber)">단어 학습률·시험 점수·오답 수는 조작하지 않으며</b>, DAY 완료 상태와 다음 DAY 개방만 변경합니다.</div>
+      </div>
+      <div style="min-width:300px;flex:0 1 390px">
+        <div style="display:flex;gap:10px;align-items:center">
+          <select class="select-box" id="adminForceDay" style="flex:1">${Array.from({length:DAYS},(_,i)=>`<option value="${i+1}" ${(i+1)===currentDay()?'selected':''}>DAY ${i+1}까지</option>`).join('')}</select>
+          <button class="btn btn-hero sm" style="white-space:nowrap;background:linear-gradient(120deg,#FFB443,#FF7A45)" onclick="adminForceCompleteThrough()">강제 수료 완료</button>
+        </div>
+        <div class="mini" style="margin-top:9px">관리자 완료: <b style="color:var(--amber)">${forcedCompletionCount()}개 DAY</b> · ${lastAdminActionText()}</div>
+      </div>
+    </div>
+  </div>
   <div class="tbl-wrap">
     <div class="tbl-head"><div style="font-family:var(--disp);font-weight:700;font-size:16px">DAY별 학습 내역</div>
-      <span class="chip iris">${Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length}/${DAYS} 완료</span></div>
-    <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>오답</th><th>상태</th><th>출력</th></tr></thead>
-    <tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1;const dp=dayProgress(d);const lg=S.dayLog[d]||{};const p=Math.round(dp.seen/dp.total*100);
+      <span class="chip iris">${completedDayCount()}/${DAYS} 완료</span></div>
+    <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>오답</th><th>상태</th><th>완료일</th><th>출력</th></tr></thead>
+    <tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1;const dp=dayProgress(d);const lg=S.dayLog[d]||{};const rec=S.dayRecords[d]||{};const p=Math.round(dp.seen/dp.total*100);
       const wrongN=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
-      const st=dp.seen===dp.total?'<span class="chip green">완료</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
+      const forced=rec.completionMethod==='admin_force'||rec.forced;
+      const st=isDayDone(d)?(forced?'<span class="chip amber" title="관리자 권한으로 강제 수료 처리됨">관리자 완료</span>':'<span class="chip green">학습 완료</span>'):dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
       return `<tr><td class="num" style="font-weight:700">DAY ${d}</td><td class="num">${dp.seen}/${dp.total}</td>
         <td><div class="bar-cell"><div class="track"><i style="width:${p}%"></i></div><span class="num" style="color:var(--txt2);font-size:12px">${p}%</span></div></td>
         <td class="num">${lg.quizzes||0}회</td><td class="num">${lg.bestPct?lg.bestPct+'%':'-'}</td>
         <td class="num" style="color:${wrongN?'var(--red)':'var(--txt3)'}">${wrongN}</td><td>${st}</td>
+        <td class="num" style="white-space:nowrap;color:var(--txt2)">${rec.completedAt?fmtFull(rec.completedAt):'-'}</td>
         <td><button class="icon-btn" onclick="buildA4(${d})" title="시험지 출력">📄</button></td></tr>`;}).join('')}</tbody></table></div>
   </div>
   <div class="tbl-wrap">
@@ -917,13 +1024,16 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
 
 /* ===== 리포트/이메일/내보내기 ===== */
 function reportSummary(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const doneDays=[];for(let d=1;d<=DAYS;d++)if(dayProgress(d).seen===dayProgress(d).total)doneDays.push(d);
+ const doneDays=[];for(let d=1;d<=DAYS;d++)if(isDayDone(d))doneDays.push(d);
  return `[워드마스터 수능2000 학습 리포트]
 생성일: ${new Date().toLocaleString('ko-KR')}
 ─────────────────────────
 ■ 전체 진도: ${pct}% (${seenCount()}/${TOTAL})
 ■ 완전 암기: ${masteredCount()}
 ■ 완료 DAY: ${doneDays.length}/${DAYS}
+■ 관리자 강제 완료: ${forcedCompletionCount()}개 DAY
+■ 현재 DAY: ${currentDay()}
+■ 최근 DAY 완료: ${S.progress.lastCompletedAt?new Date(S.progress.lastCompletedAt).toLocaleString('ko-KR'):'없음'}
 ■ 정답률: ${accur}%
 ■ 오답: ${wrongList().length}
 ■ 연속 학습: ${S.streak}일
@@ -935,7 +1045,7 @@ ${S.sessions.slice(0,5).map(s=>`  ${fmtFull(s.login)} · D${s.day} · ${s.correc
 }
 function mailReport(){if(!emailJSReady){toast('메일 준비 중, 잠시 후 다시');initEmailJS();return;}
  toast('보고서 발송 중...');const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const doneDays=[];for(let d=1;d<=DAYS;d++)if(dayProgress(d).seen===dayProgress(d).total)doneDays.push(d);
+ const doneDays=[];for(let d=1;d<=DAYS;d++)if(isDayDone(d))doneDays.push(d);
  const hist=S.sessions.slice(0,10).map(s=>`${fmtFull(s.login)} · D${s.day} · ${s.correct}/${s.total} · ${fmtDur(s.dur)}`).join('\n')||'(없음)';
  emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
   to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),
@@ -944,16 +1054,16 @@ function mailReport(){if(!emailJSReady){toast('메일 준비 중, 잠시 후 다
  }).then(()=>toast('✓ 관리자에게 발송 완료')).catch(e=>{console.error(e);toast('⚠ 발송 실패 · 설정 확인');});
 }
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);toast('내려받기');}
-function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','오답수','상태']];
- for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
-  rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dp.seen===dp.total?'완료':dp.seen?'진행':'미시작']);}
+function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','오답수','상태','완료방식','완료일']];
+ for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const rec=S.dayRecords[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;const forced=rec.completionMethod==='admin_force'||rec.forced;
+  rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,isDayDone(d)?'완료':dp.seen?'진행':'미시작',isDayDone(d)?(forced?'관리자 강제 수료':'학습 완료'):'',rec.completedAt?fmtFull(rec.completedAt):'']);}
  dl(`워드마스터_DAY별_${today()}.csv`,'\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'text/csv;charset=utf-8');}
 function downloadLogsCSV(){let rows=[['접속시각','DAY','유형','소요시간(초)','정답','총문항','정답률(%)']];
  S.sessions.forEach(s=>{rows.push([fmtFull(s.login),s.day||'오답',s.type,s.dur,s.correct,s.total,s.total?Math.round(s.correct/s.total*100):0]);});
  dl(`워드마스터_로그인기록_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
 function backupJSON(){dl(`워드마스터_백업_${today()}.json`,JSON.stringify(S),'application/json');}
 function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
- r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.seen)throw 0;S=o;const d=defState();for(const k in d)if(!(k in S))S[k]=d[k];for(const k in d.config)if(S.config[k]===undefined)S.config[k]=d.config[k];save();toast('복원 완료!');go('Admin');renderSidebar();}catch(err){toast('올바른 백업이 아니에요');}};r.readAsText(f);}
+ r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.seen)throw 0;S=o;normalizeState();save();toast('복원 완료!');go('Admin');renderSidebar();}catch(err){toast('올바른 백업이 아니에요');}};r.readAsText(f);}
 
 /* ===== global keyboard ===== */
 document.addEventListener('keydown',e=>{
