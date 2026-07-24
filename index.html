@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>WORD MASTER 수능 2000 · 18DAY 집중 학습</title>
+<title>WORD MASTER 수능 2000 · 18DAY 누적 학습</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -1727,11 +1727,11 @@ function renderReview(){
 function renderConfig(){
  ensureV11State();const c=S.config,sd=+($('#scheduleDay')&&$('#scheduleDay').value)||currentDay(),sch=getSchedule(sd),maxDay=Math.max(...DAY_WORD_COUNTS);
  $('#vConfig').innerHTML=`
-  <div class="source-audit"><div class="metric-card-lite"><div class="stat-lbl">18DAY 단어</div><div class="n grad-txt">${TOTAL}</div><div class="mini">누적 단어 단위 저장</div></div><div class="metric-card-lite"><div class="stat-lbl">완료 DAY</div><div class="n grad-lime">${completedDayCount()}</div><div class="mini">강제 수료 포함</div></div><div class="metric-card-lite"><div class="stat-lbl">실제 누적시간</div><div class="n grad-pink" style="font-size:24px">${fmtActual(totalActualSeconds())}</div><div class="mini">예상시간 사용 안 함</div></div></div>
+  <div class="source-audit"><div class="metric-card-lite"><div class="stat-lbl">18DAY 단어</div><div class="n grad-txt">${TOTAL}</div><div class="mini">누적 단어 단위 저장</div></div><div class="metric-card-lite"><div class="stat-lbl">완료 DAY</div><div class="n grad-lime">${completedDayCount()}</div><div class="mini">강제 수료 포함</div></div><div class="metric-card-lite"><div class="stat-lbl">실제 누적시간</div><div class="n grad-pink" style="font-size:24px">${fmtActual(totalActualSeconds())}</div><div class="mini">실제시간 기준</div></div></div>
   <div class="card" style="margin-bottom:18px"><div style="font-family:var(--disp);font-weight:700;font-size:19px">관리자 전용 시간표</div><div class="mini" style="margin:4px 0 18px">시작·종료 시각만 표시하며, 별도의 시간 배분 단계는 만들지 않습니다.</div><div class="schedule-editor simple"><label>DAY<select class="select-box" id="scheduleDay" onchange="renderConfig()">${Array.from({length:DAYS},(_,i)=>`<option value="${i+1}" ${i+1===sd?'selected':''}>DAY ${i+1}</option>`).join('')}</select></label><label>시작시간<div class="time-wrap"><input type="time" id="scheduleStart" value="${sch.start||''}"></div></label><label>종료시간<div class="time-wrap"><input type="time" id="scheduleEnd" value="${sch.end||''}"></div></label></div><div class="admin-actions" style="margin-top:16px"><button class="btn btn-hero" onclick="saveScheduleForDay()">시간표 저장</button><button class="btn btn-ghost" onclick="copyScheduleToRemaining()">이후 DAY에 적용</button></div></div>
   <div class="grid g-2" style="align-items:start"><div class="card"><div style="font-family:var(--disp);font-weight:700;font-size:19px;margin-bottom:4px">선택형 학습 설정</div><div class="mini" style="margin-bottom:18px">미학습·오답을 우선 출제하고 결과를 누적합니다.</div><div class="cfg-row"><div><div class="cfg-label">1회 최대 문항</div><div class="cfg-desc">전체 선택 시 남은 미학습·오답을 모두 출제</div></div><div class="seg" style="margin:0"><button class="${c.quizCount===0?'on':''}" onclick="setCount(0)">전체</button><button class="${c.quizCount>0?'on':''}" onclick="setCount(20)">직접지정</button></div></div>${c.quizCount>0?`<div class="cfg-row"><div><div class="cfg-label">문항 수</div><div class="cfg-desc">중단해도 다음 실행에서 남은 단어 우선</div></div><input type="number" class="num-input" min="5" max="${maxDay}" value="${c.quizCount}" onchange="setCount(this.value)"></div>`:''}<div class="cfg-row"><div><div class="cfg-label">숙달 항목 재확인 비율</div><div class="cfg-desc">미학습·오답이 없을 때만 적용</div></div><input type="number" class="num-input" min="0" max="100" value="${c.adaptiveMasteredRate}" onchange="setMasteredRate(this.value)"></div></div>
    <div class="card"><div style="font-family:var(--disp);font-weight:700;font-size:19px;margin-bottom:4px">출제 방향</div><div class="mini" style="margin-bottom:18px">영→한 / 한→영 객관식 비율</div><div class="ratio-wrap"><div class="ratio-bar"><div class="en" style="width:${c.enPct}%">영→한 ${c.enPct}%</div><div class="ko" style="width:${100-c.enPct}%">한→영 ${100-c.enPct}%</div></div></div><input type="range" class="slider" min="0" max="100" step="10" value="${c.enPct}" oninput="setRatio(this.value)"><div class="mail-note" style="margin-top:20px;margin-bottom:0"><b>오답 교정 고정 흐름</b><br>객관식 재확인 1회 → 나타내기 → 한→영 입력 → 영→한 입력</div></div></div>
-  <div class="card" style="margin-top:18px"><div style="font-family:var(--disp);font-weight:700;font-size:17px">입력 호환성</div><div class="compat-grid"><div class="compat-item"><b>PC</b><span class="mini">숫자 1~4·마우스·Enter</span></div><div class="compat-item"><b>태블릿</b><span class="mini">큰 보기 전체 터치</span></div><div class="compat-item"><b>모바일</b><span class="mini">세로 1열·화면 키보드</span></div></div><div class="device-note">진도는 동일 브라우저의 localStorage에 누적됩니다. PC·태블릿·휴대전화 간 자동 동기화는 서버 DB가 없으므로 지원되지 않으며, 장치를 바꿀 때는 관리자 백업·복원 기능을 사용해야 합니다.</div></div>`;
+  <div class="card" style="margin-top:18px"><div style="font-family:var(--disp);font-weight:700;font-size:17px">입력 호환성</div><div class="compat-grid"><div class="compat-item"><b>PC</b><span class="mini">숫자 1~4·마우스·Enter</span></div><div class="compat-item"><b>태블릿</b><span class="mini">큰 보기 전체 터치</span></div><div class="compat-item"><b>모바일</b><span class="mini">세로 1열·화면 키보드</span></div></div><div class="device-note">진도는 브라우저에 즉시 저장되고 Firebase Firestore에도 동기화됩니다. PC·태블릿·휴대전화에서 같은 학습자 비밀번호로 접속하면 동일 진도를 이어서 학습합니다. 네트워크가 끊기면 로컬에 보관한 뒤 재연결 시 자동 반영합니다.</div></div>`;
 }
 function saveScheduleForDay(){const d=+$('#scheduleDay').value,start=$('#scheduleStart').value,end=$('#scheduleEnd').value;if((start&&!end)||(!start&&end)){toast('시작·종료시간을 함께 입력하세요');return;}S.schedule[d]={...(S.schedule[d]||{}),start,end};save();toast(`✓ DAY ${d} 시간표 저장`);renderConfig();}
 function copyScheduleToRemaining(){const d=+$('#scheduleDay').value,start=$('#scheduleStart').value,end=$('#scheduleEnd').value;if((start&&!end)||(!start&&end)){toast('시작·종료시간을 함께 입력하세요');return;}for(let i=d;i<=DAYS;i++)S.schedule[i]={...(S.schedule[i]||{}),start,end};save();toast(`✓ DAY ${d}~${DAYS} 시간표 적용`);renderConfig();}
@@ -1743,7 +1743,7 @@ function renderAdmin(){
   <div class="admin-grid"><div class="akpi"><div class="lbl">전체 진도</div><div class="v grad-txt">${pct}%</div></div><div class="akpi"><div class="lbl">누적 단어</div><div class="v grad-lime">${coveredCount()}</div></div><div class="akpi"><div class="lbl">정답률</div><div class="v">${accur}%</div></div><div class="akpi"><div class="lbl">실제 누적시간</div><div class="v grad-pink" style="font-size:25px">${fmtActual(totalActualSeconds())}</div></div></div>
   <div class="card" style="margin-bottom:24px;border-color:rgba(255,180,67,.45);background:linear-gradient(145deg,rgba(255,180,67,.09),var(--panel))"><div class="day-summary"><div style="flex:1;min-width:250px"><div style="font-family:var(--disp);font-weight:700;font-size:18px;margin-bottom:5px">🛡️ 관리자 강제 수료 관리</div><div class="mini">실제 학습량과 점수는 바꾸지 않고 DAY 완료 상태만 복구합니다.</div></div><div style="min-width:300px;flex:0 1 400px"><div style="display:flex;gap:10px"><select class="select-box" id="adminForceDay">${Array.from({length:DAYS},(_,i)=>`<option value="${i+1}" ${(i+1)===currentDay()?'selected':''}>DAY ${i+1}까지</option>`).join('')}</select><button class="btn btn-hero sm" style="white-space:nowrap;background:linear-gradient(120deg,#FFB443,#FF7A45)" onclick="adminForceCompleteThrough()">강제 수료</button></div><div class="mini" style="margin-top:8px">관리자 완료 ${forcedCompletionCount()}개 · ${lastAdminActionText()}</div></div></div></div>
   <div class="tbl-wrap"><div class="tbl-head"><div style="font-family:var(--disp);font-weight:700;font-size:16px">DAY별 누적 내역</div><span class="chip iris">${completedDayCount()}/${DAYS} 완료</span></div><div style="max-height:430px;overflow:auto"><table><thead><tr><th>DAY</th><th>단어</th><th>누적문항</th><th>정답/오답</th><th>실제시간</th><th>현재오답</th><th>상태</th><th>완료일</th></tr></thead><tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1,dp=dayProgress(d),m=dayMetricState(d),rec=S.dayRecords[d]||{},wrongN=dayWrongWords(d).length,forced=rec.completionMethod==='admin_force'||rec.forced,st=isDayDone(d)?(forced?'<span class="chip amber">관리자 완료</span>':'<span class="chip green">학습 완료</span>'):dp.seen?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';return `<tr><td class="num" style="font-weight:700">DAY ${d}</td><td class="num">${dp.seen}/${dp.total}</td><td class="num">${m.answered}</td><td class="num">${m.correct}/${m.wrong}</td><td class="num" style="white-space:nowrap">${fmtActual(actualSeconds(d))}</td><td class="num" style="color:${wrongN?'var(--red)':'var(--txt3)'}">${wrongN}</td><td>${st}</td><td class="num" style="white-space:nowrap;color:var(--txt2)">${rec.completedAt?fmtFull(rec.completedAt):'-'}</td></tr>`;}).join('')}</tbody></table></div></div>
-  <div class="card"><div style="font-family:var(--disp);font-weight:700;font-size:17px;margin-bottom:6px">보고서·백업</div><div class="mini" style="margin-bottom:16px">장치 간 자동 동기화가 없으므로 기기 변경 전 JSON 백업을 권장합니다.</div><div class="admin-actions"><button class="btn btn-hero" onclick="mailReport()">📧 보고서 발송</button><button class="btn btn-ghost" onclick="downloadCSV()">⬇ DAY별 CSV</button><button class="btn btn-ghost" onclick="downloadLogsCSV()">⬇ 시험기록 CSV</button><button class="btn btn-ghost" onclick="backupJSON()">💾 백업(JSON)</button><label class="btn btn-ghost" style="cursor:pointer">📂 복원<input type="file" accept=".json" style="display:none" onchange="restoreJSON(event)"></label></div></div>`;
+  <div class="card"><div style="font-family:var(--disp);font-weight:700;font-size:17px;margin-bottom:6px">보고서·백업</div><div class="mini" style="margin-bottom:16px">PC·태블릿·휴대전화 진도는 Firestore로 자동 동기화됩니다. JSON 백업은 별도의 안전 복구본으로 유지합니다.</div><div class="admin-actions"><button class="btn btn-hero" onclick="mailReport()">📧 보고서 발송</button><button class="btn btn-ghost" onclick="downloadCSV()">⬇ DAY별 CSV</button><button class="btn btn-ghost" onclick="downloadLogsCSV()">⬇ 시험기록 CSV</button><button class="btn btn-ghost" onclick="backupJSON()">💾 백업(JSON)</button><label class="btn btn-ghost" style="cursor:pointer">📂 복원<input type="file" accept=".json" style="display:none" onchange="restoreJSON(event)"></label></div></div>`;
 }
 function reportSummary(){const pct=Math.round(coveredCount()/TOTAL*100),totQ=S.quizStat.done,accur=totQ?Math.round(S.quizStat.correct/totQ*100):0,L=levelInfo();return `[워드마스터 수능2000 누적 학습 리포트]\n생성일: ${new Date().toLocaleString('ko-KR')}\n─────────────────────────\n■ 전체 진도: ${pct}% (${coveredCount()}/${TOTAL})\n■ 완료 DAY: ${completedDayCount()}/${DAYS}\n■ 실제 누적시간: ${fmtActual(totalActualSeconds())}\n■ 누적 문항: ${totQ}\n■ 정답률: ${accur}%\n■ 현재 오답: ${wrongList().length}\n■ 완전 암기: ${masteredCount()}\n■ 현재 DAY: ${currentDay()}\n■ 레벨: Lv.${L.lv} ${L.name}`;}
 function downloadCSV(){let rows=[['DAY','누적단어','전체단어','학습률(%)','누적문항','정답','오답','객관식','오답재확인','주관식','나타내기','실제시간(초)','현재오답','상태','완료방식','완료일']];for(let d=1;d<=DAYS;d++){const dp=dayProgress(d),m=dayMetricState(d),rec=S.dayRecords[d]||{},wn=dayWrongWords(d).length,forced=rec.completionMethod==='admin_force'||rec.forced;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),m.answered,m.correct,m.wrong,m.mcAnswered,m.retryMcAnswered,m.subjectiveAnswered,m.revealCount,actualSeconds(d),wn,isDayDone(d)?'완료':dp.seen?'진행':'미시작',isDayDone(d)?(forced?'관리자 강제 수료':'학습 완료'):'',rec.completedAt?fmtFull(rec.completedAt):'']);}dl(`워드마스터_DAY별_누적_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
@@ -1751,6 +1751,357 @@ function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileR
 
 window.addEventListener('beforeunload',()=>commitDayTiming());
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&activeStudyDay){visibilityPausedDay=activeStudyDay;commitDayTiming();}else if(!document.hidden&&visibilityPausedDay&&(cur==='Study'||cur==='Quiz')){const d=visibilityPausedDay;visibilityPausedDay=null;if(!isDayDone(d))beginDayTiming(d);}});
+</script>
+
+
+<style id="wm-v12-cloud-style">
+/* ===== v12: Firestore 다기기 동기화 · 철자 회상 복구 · 진단 ===== */
+.cloud-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;padding:8px 13px;background:var(--panel);font-size:12px;font-weight:700;color:var(--txt2);white-space:nowrap}
+.cloud-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--txt3);box-shadow:0 0 0 3px rgba(91,100,133,.12)}
+.cloud-pill.syncing::before{background:var(--amber);box-shadow:0 0 0 3px rgba(255,180,67,.14);animation:cloudPulse 1s ease-in-out infinite}
+.cloud-pill.online::before{background:var(--green);box-shadow:0 0 0 3px rgba(43,227,138,.14)}
+.cloud-pill.offline::before,.cloud-pill.error::before{background:var(--red);box-shadow:0 0 0 3px rgba(255,77,109,.14)}
+@keyframes cloudPulse{50%{opacity:.35}}
+.cloud-panel{border:1px solid rgba(0,229,212,.28);background:linear-gradient(145deg,rgba(0,229,212,.07),var(--panel));border-radius:20px;padding:20px;margin-bottom:18px}
+.cloud-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.cloud-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.cloud-stat{padding:13px;border:1px solid var(--line);background:var(--bg2);border-radius:14px}
+.cloud-stat .k{font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.cloud-stat .v{font-size:13px;font-weight:700;margin-top:4px;word-break:break-all}
+.sync-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.selfcheck-list{display:grid;gap:8px;margin-top:14px}
+.selfcheck-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);font-size:13px}
+.selfcheck-row .ok{color:var(--green);font-weight:800}.selfcheck-row .bad{color:var(--red);font-weight:800}.selfcheck-row .warn{color:var(--amber);font-weight:800}
+.spell-recall-card{max-width:680px;margin:0 auto}
+.spell-recall-word{font-size:clamp(26px,5vw,42px);font-weight:700;text-align:center;margin:22px 0 16px;word-break:keep-all}
+@media(max-width:900px){.cloud-grid{grid-template-columns:repeat(2,1fr)}.cloud-pill{padding:7px 10px;font-size:10.5px}}
+@media(max-width:560px){.cloud-grid{grid-template-columns:1fr}.cloud-panel{padding:16px}.tb-right{gap:7px}.cloud-pill{max-width:145px;overflow:hidden;text-overflow:ellipsis}.sync-actions .btn{flex:1}}
+</style>
+
+<script id="wm-v12-cloud-script">
+/* ============================================================
+   v12 통합 복구
+   1) Root Voca에서 검증된 Firebase 프로젝트를 사용하되,
+      users/user 문서의 wm2000 필드에 별도 저장하여 기존 Root Voca 자료를 덮어쓰지 않음
+   2) localStorage 즉시 저장 + Firestore 지연 동기화 + 실시간 수신
+   3) 기존 로컬 2일 기록을 최초 연결 시 클라우드와 병합
+   4) DAY 마감 전 철자 회상 단계 복구
+   5) 관리자 자가점검 및 수동 동기화 제공
+   ============================================================ */
+var WM_SCHEMA=12;
+
+const WM_FIREBASE_CONFIG={
+ apiKey:"AIzaSyCX4ceBT_jMtLymTFQPuDl8IX95Og4bpbc",
+ authDomain:"root-voca.firebaseapp.com",
+ projectId:"root-voca",
+ storageBucket:"root-voca.firebasestorage.app",
+ messagingSenderId:"634926576157",
+ appId:"1:634926576157:web:d270e6db27fcbbb5390cf4"
+};
+const WM_EMAIL_CONFIG={
+ publicKey:"JJdWMghPhZrilD_ZQ",
+ serviceId:"service_vz3hns6",
+ templateId:"template_kgxlher",
+ adminEmails:["sk01197375068@gmail.com"]
+};
+const WM_CLOUD_DOC={collection:"users",id:"user",field:"wm2000",syncField:"wm2000Sync"};
+
+function wmClone(v){try{return structuredClone(v);}catch(e){return JSON.parse(JSON.stringify(v));}}
+function wmIsoMs(v){const n=Date.parse(v||'');return Number.isFinite(n)?n:0;}
+function wmMaxIso(a,b){return wmIsoMs(a)>=wmIsoMs(b)?(a||b):(b||a);}
+function wmStableSig(v){try{return JSON.stringify(v,Object.keys(v||{}).sort());}catch(e){return String(v);}}
+function wmUnionArray(a,b,limit=400){const out=[],seen=new Set();[...(a||[]),...(b||[])].forEach(x=>{const sig=wmStableSig(x);if(!seen.has(sig)){seen.add(sig);out.push(x);}});out.sort((x,y)=>wmIsoMs(y.date||y.at||y.login||y.completedAt)-wmIsoMs(x.date||x.at||x.login||x.completedAt));return out.slice(0,limit);}
+function wmDeepEqual(a,b){try{return JSON.stringify(a)===JSON.stringify(b);}catch(e){return a===b;}}
+function wmDeviceId(){
+ try{let id=localStorage.getItem('wm2000-device-id');if(!id){id='dev-'+Math.random().toString(36).slice(2,10)+'-'+Date.now().toString(36);localStorage.setItem('wm2000-device-id',id);}return id;}
+ catch(e){return 'dev-memory-'+Math.random().toString(36).slice(2,8);}
+}
+function wmWithTimeout(promise,ms,label){
+ return Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'연결 시간 초과')),ms))]);
+}
+
+const CloudSync={
+ ready:false,enabled:false,active:false,db:null,fs:null,unsub:null,
+ status:'idle',message:'클라우드 준비',lastSyncAt:'',lastError:'',
+ deviceId:wmDeviceId(),saveTimer:null,applyingRemote:false,uploading:false,
+ lastSnapshot:null,lastUploadedRevision:0,initialLoaded:false,
+ setStatus(status,message){this.status=status;this.message=message||'';updateCloudBadge();},
+ async init(){
+  if(this.ready&&this.enabled)return true;
+  if(this.ready&&!this.enabled)this.ready=false;
+  this.setStatus('syncing','Firebase 연결 중');
+  try{
+   const V='12.16.0';
+   const modules=await wmWithTimeout(Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`)
+   ]),7000,'Firebase SDK 연결 시간 초과');
+   const {initializeApp,getApps,getApp}=modules[0];
+   const fs=modules[1];
+   const app=getApps().length?getApp():initializeApp(WM_FIREBASE_CONFIG);
+   this.db=fs.getFirestore(app);this.fs=fs;this.ready=true;this.enabled=true;
+   this.setStatus(navigator.onLine?'online':'offline',navigator.onLine?'클라우드 연결됨':'오프라인 · 로컬 저장');
+   return true;
+  }catch(e){
+   this.ready=true;this.enabled=false;this.lastError=String(e&&e.message||e);
+   this.setStatus('error','클라우드 연결 실패 · 로컬 저장');console.warn('[wm cloud] init failed',e);return false;
+  }
+ },
+ ref(){return this.fs.doc(this.db,WM_CLOUD_DOC.collection,WM_CLOUD_DOC.id);},
+ async read(){
+  if(!this.enabled)return null;
+  try{const snap=await this.fs.getDoc(this.ref());if(!snap.exists())return null;const d=snap.data()||{};return d[WM_CLOUD_DOC.field]||null;}
+  catch(e){this.lastError=String(e&&e.message||e);this.setStatus(navigator.onLine?'error':'offline',navigator.onLine?'불러오기 실패 · 로컬 유지':'오프라인 · 로컬 저장');console.warn('[wm cloud] read failed',e);return null;}
+ },
+ cloudPayload(){
+  const copy=wmClone(S);ensureV12State(copy);
+  if(copy.dayTime){for(let d=1;d<=DAYS;d++){const t=copy.dayTime[d]||{};if(S.dayTime&&S.dayTime[d])t.activeSeconds=actualSeconds(d);t.activeSince=null;copy.dayTime[d]=t;}}
+  copy.meta=copy.meta||{};copy.meta.schemaVersion=Math.max(12,+copy.meta.schemaVersion||0);
+  copy.syncMeta=copy.syncMeta||{};copy.syncMeta.deviceId=this.deviceId;copy.syncMeta.updatedAt=new Date().toISOString();
+  return copy;
+ },
+ async upload(reason='auto'){
+  if(!this.active||!this.enabled||this.applyingRemote||this.uploading)return false;
+  clearTimeout(this.saveTimer);this.saveTimer=null;this.uploading=true;this.setStatus('syncing','클라우드 저장 중');
+  try{
+   const payload=this.cloudPayload();const rev=+(payload.syncMeta&&payload.syncMeta.revision)||0;
+   await this.fs.setDoc(this.ref(),{
+    [WM_CLOUD_DOC.field]:payload,
+    [WM_CLOUD_DOC.syncField]:{updatedAt:Date.now(),updatedIso:new Date().toISOString(),deviceId:this.deviceId,revision:rev,schema:12,reason,app:'WORD_MASTER_18DAY'}
+   },{merge:true});
+   this.lastUploadedRevision=Math.max(this.lastUploadedRevision,rev);this.lastSyncAt=new Date().toISOString();this.lastError='';
+   this.setStatus('online','동기화 완료');return true;
+  }catch(e){
+   this.lastError=String(e&&e.message||e);this.setStatus(navigator.onLine?'error':'offline',navigator.onLine?'저장 실패 · 재시도 대기':'오프라인 · 재연결 시 동기화');console.warn('[wm cloud] upload failed',e);return false;
+  }finally{this.uploading=false;renderCloudPanels();}
+ },
+ queue(reason='change'){
+  if(!this.active)return;clearTimeout(this.saveTimer);this.saveTimer=setTimeout(()=>this.upload(reason),700);
+ },
+ async initialSync(){
+  const ok=await this.init();this.active=true;if(!ok){this.initialLoaded=true;return false;}
+  this.setStatus('syncing','기존 진도 확인 중');
+  const remote=await this.read();
+  if(remote){applyMergedRemote(remote,'initial');}
+  else{await this.upload('first_local_migration');}
+  this.initialLoaded=true;this.startRealtime();
+  if(remote)await this.upload('initial_merged');
+  return true;
+ },
+ startRealtime(){
+  if(!this.enabled||this.unsub)return;
+  this.unsub=this.fs.onSnapshot(this.ref(),snap=>{
+   if(!snap.exists())return;const data=snap.data()||{},remote=data[WM_CLOUD_DOC.field],info=data[WM_CLOUD_DOC.syncField]||{};
+   if(!remote)return;if(info.deviceId===this.deviceId&&(+info.revision||0)<=this.lastUploadedRevision)return;
+   applyMergedRemote(remote,'realtime');this.lastSyncAt=new Date().toISOString();this.setStatus('online','다른 기기 진도 반영');renderCloudPanels();
+  },e=>{this.lastError=String(e&&e.message||e);this.setStatus(navigator.onLine?'error':'offline','실시간 연결 중단 · 자동 재시도');console.warn('[wm cloud] snapshot failed',e);});
+ },
+ async reload(){
+  if(!await this.init()){toast('클라우드 연결을 확인하세요');return false;}this.active=true;this.setStatus('syncing','클라우드 다시 불러오는 중');
+  const remote=await this.read();if(!remote){toast('클라우드에 저장된 WORD MASTER 진도가 없습니다');this.setStatus('online','클라우드 자료 없음');return false;}
+  applyMergedRemote(remote,'manual_reload');await this.upload('manual_reconciled');toast('✓ 클라우드 진도를 병합했습니다');return true;
+ },
+ async flush(){clearTimeout(this.saveTimer);this.saveTimer=null;return await this.upload('manual_flush');}
+};
+
+function ensureV12State(target=S){
+ if(!target||typeof target!=='object')return target;
+ ['seen','mastered','wrong','fav','dayDone','dayRecords','schedule','dayTime','dayMetrics','dayFlow','daily','dayLog','mailStatus','legacyCredit','wrongDetail'].forEach(k=>{if(!target[k]||typeof target[k]!=='object'||Array.isArray(target[k]))target[k]={};});
+ ['history','sessions','adminActions','pendingDayMails'].forEach(k=>{if(!Array.isArray(target[k]))target[k]=[];});
+ target.progress=target.progress&&typeof target.progress==='object'?target.progress:{currentDay:1,lastCompletedDay:0,lastCompletedAt:'',lastActivityAt:''};
+ target.quizStat=target.quizStat&&typeof target.quizStat==='object'?target.quizStat:{done:0,correct:0};
+ target.syncMeta=target.syncMeta&&typeof target.syncMeta==='object'?target.syncMeta:{};
+ target.syncMeta.touched=target.syncMeta.touched&&typeof target.syncMeta.touched==='object'?target.syncMeta.touched:{};
+ ['seen','mastered','wrong','fav','dayDone','dayRecords','schedule','dayTime','dayMetrics','dayFlow','daily','mailStatus','legacyCredit'].forEach(k=>{if(!target.syncMeta.touched[k]||typeof target.syncMeta.touched[k]!=='object')target.syncMeta.touched[k]={};});
+ target.syncMeta.sections=target.syncMeta.sections&&typeof target.syncMeta.sections==='object'?target.syncMeta.sections:{};
+ target.syncMeta.revision=Math.max(0,+target.syncMeta.revision||0);
+ target.syncMeta.deviceId=target.syncMeta.deviceId||CloudSync.deviceId;
+ for(let d=1;d<=DAYS;d++){
+  if(!target.dayTime[d]||typeof target.dayTime[d]!=='object')target.dayTime[d]={activeSeconds:0,activeSince:null,sessions:0,lastStartedAt:'',lastPausedAt:''};
+  if(!target.dayMetrics[d]||typeof target.dayMetrics[d]!=='object')target.dayMetrics[d]={answered:0,correct:0,wrong:0,mcAnswered:0,subjectiveAnswered:0,revealCount:0,retryMcAnswered:0,uniqueIds:{}};
+  if(!target.dayMetrics[d].uniqueIds||typeof target.dayMetrics[d].uniqueIds!=='object')target.dayMetrics[d].uniqueIds={};
+  if(!target.dayFlow[d]||typeof target.dayFlow[d]!=='object')target.dayFlow[d]={spellingDone:false,spellingAttempts:0,spellingCorrect:0,spellingIds:[]};
+ }
+ target.config=target.config||{};if(target.config.spellingCount===undefined)target.config.spellingCount=10;
+ target.meta=target.meta||{};target.meta.schemaVersion=Math.max(12,+target.meta.schemaVersion||0);
+ return target;
+}
+ensureV12State();
+
+function markSyncChanges(prev,next){
+ ensureV12State(next);const now=Date.now(),maps=['seen','mastered','wrong','fav','dayDone','dayRecords','schedule','dayTime','dayMetrics','dayFlow','daily','mailStatus'];
+ maps.forEach(name=>{const a=(prev&&prev[name])||{},b=next[name]||{},keys=new Set([...Object.keys(a),...Object.keys(b)]);keys.forEach(k=>{if(!wmDeepEqual(a[k],b[k]))next.syncMeta.touched[name][k]=now;});});
+ ['config','progress','quizStat','history','sessions','adminActions','wrongDetail','mailQueue','streakXp'].forEach(name=>{
+  let av,bv;if(name==='streakXp'){av=prev?{streak:prev.streak,lastDate:prev.lastDate,xp:prev.xp}:{};bv={streak:next.streak,lastDate:next.lastDate,xp:next.xp};}
+  else{av=prev&&prev[name];bv=next[name];}
+  if(!wmDeepEqual(av,bv))next.syncMeta.sections[name]=now;
+ });
+ next.syncMeta.revision=(+next.syncMeta.revision||0)+1;next.syncMeta.updatedAt=new Date(now).toISOString();next.syncMeta.deviceId=CloudSync.deviceId;
+}
+
+function touchedAt(st,name,key){return +((((st||{}).syncMeta||{}).touched||{})[name]||{})[key]||0;}
+function sectionAt(st,name){return +((((st||{}).syncMeta||{}).sections||{})[name]||0);}
+function globalAt(st){return Math.max(wmIsoMs(st&&st.meta&&st.meta.lastSavedAt),wmIsoMs(st&&st.syncMeta&&st.syncMeta.updatedAt));}
+function mergeTouchedMap(local,remote,name,fallback){
+ const out={},a=(local&&local[name])||{},b=(remote&&remote[name])||{},keys=new Set([...Object.keys(a),...Object.keys(b)]);
+ keys.forEach(k=>{const lt=touchedAt(local,name,k),rt=touchedAt(remote,name,k);if(lt>rt)out[k]=wmClone(a[k]);else if(rt>lt)out[k]=wmClone(b[k]);else out[k]=fallback?fallback(a[k],b[k],local,remote,k):(globalAt(remote)>globalAt(local)?wmClone(b[k]):wmClone(a[k]));});return out;
+}
+function mergeRecord(a,b){if(a===undefined)return wmClone(b);if(b===undefined)return wmClone(a);const at=Math.max(wmIsoMs(a&&a.lastActivityAt),wmIsoMs(a&&a.completedAt),wmIsoMs(a&&a.lastPausedAt)),bt=Math.max(wmIsoMs(b&&b.lastActivityAt),wmIsoMs(b&&b.completedAt),wmIsoMs(b&&b.lastPausedAt));return wmClone(bt>at?b:a);}
+function mergeDayTime(a,b){a=a||{};b=b||{};const newer=mergeRecord(a,b)||{};return {...newer,activeSeconds:Math.max(+a.activeSeconds||0,+b.activeSeconds||0),sessions:Math.max(+a.sessions||0,+b.sessions||0),activeSince:null,lastStartedAt:wmMaxIso(a.lastStartedAt,b.lastStartedAt),lastPausedAt:wmMaxIso(a.lastPausedAt,b.lastPausedAt)};}
+function mergeMetrics(a,b){a=a||{};b=b||{};return {answered:Math.max(+a.answered||0,+b.answered||0),correct:Math.max(+a.correct||0,+b.correct||0),wrong:Math.max(+a.wrong||0,+b.wrong||0),mcAnswered:Math.max(+a.mcAnswered||0,+b.mcAnswered||0),subjectiveAnswered:Math.max(+a.subjectiveAnswered||0,+b.subjectiveAnswered||0),revealCount:Math.max(+a.revealCount||0,+b.revealCount||0),retryMcAnswered:Math.max(+a.retryMcAnswered||0,+b.retryMcAnswered||0),uniqueIds:{...(a.uniqueIds||{}),...(b.uniqueIds||{})}};}
+function mergeDaily(a,b){a=a||{};b=b||{};const out={};new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{const x=a[k]||{},y=b[k]||{},z={};new Set([...Object.keys(x),...Object.keys(y)]).forEach(m=>z[m]=Math.max(+x[m]||0,+y[m]||0));out[k]=z;});return out;}
+function mergeStates(local,remote){
+ local=ensureV12State(wmClone(local||defState()));remote=ensureV12State(wmClone(remote||defState()));const out=wmClone(globalAt(remote)>globalAt(local)?remote:local);
+ out.seen=mergeTouchedMap(local,remote,'seen',(a,b)=>!!a||!!b);
+ out.legacyCredit=mergeTouchedMap(local,remote,'legacyCredit',(a,b)=>!!a||!!b);
+ out.mastered=mergeTouchedMap(local,remote,'mastered',(a,b)=>Math.max(+a||0,+b||0));
+ out.wrong=mergeTouchedMap(local,remote,'wrong',(a,b,l,r)=>globalAt(r)>globalAt(l)?(+b||0):(+a||0));
+ out.fav=mergeTouchedMap(local,remote,'fav',(a,b,l,r)=>globalAt(r)>globalAt(l)?!!b:!!a);
+ out.dayDone=mergeTouchedMap(local,remote,'dayDone',(a,b)=>!!a||!!b);
+ out.dayRecords=mergeTouchedMap(local,remote,'dayRecords',mergeRecord);
+ out.schedule=mergeTouchedMap(local,remote,'schedule',mergeRecord);
+ out.dayTime=mergeTouchedMap(local,remote,'dayTime',mergeDayTime);
+ out.dayMetrics=mergeTouchedMap(local,remote,'dayMetrics',mergeMetrics);
+ out.dayFlow=mergeTouchedMap(local,remote,'dayFlow',mergeRecord);
+ out.mailStatus=mergeTouchedMap(local,remote,'mailStatus',(a,b)=>a==='sent'||b==='sent'?'sent':(globalAt(remote)>globalAt(local)?b:a));
+ out.daily=mergeDaily(local.daily,remote.daily);
+ out.config=wmClone(sectionAt(remote,'config')>sectionAt(local,'config')?remote.config:local.config);
+ out.quizStat={done:Math.max(+(local.quizStat&&local.quizStat.done)||0,+(remote.quizStat&&remote.quizStat.done)||0),correct:Math.max(+(local.quizStat&&local.quizStat.correct)||0,+(remote.quizStat&&remote.quizStat.correct)||0)};
+ out.history=wmUnionArray(local.history,remote.history,250);out.sessions=wmUnionArray(local.sessions,remote.sessions,350);out.adminActions=wmUnionArray(local.adminActions,remote.adminActions,150);
+ out.wrongDetail=wmClone(sectionAt(remote,'wrongDetail')>sectionAt(local,'wrongDetail')?remote.wrongDetail:local.wrongDetail);
+ const laterLastDate=String(local.lastDate||'')>=String(remote.lastDate||'')?local:remote;out.lastDate=laterLastDate.lastDate||'';out.streak=String(local.lastDate||'')===String(remote.lastDate||'')?Math.max(+local.streak||0,+remote.streak||0):(+laterLastDate.streak||0);out.xp=Math.max(+local.xp||0,+remote.xp||0);
+ out.pendingDayMails=[...new Set([...(local.pendingDayMails||[]),...(remote.pendingDayMails||[])])].filter(d=>!((out.dayRecords&&out.dayRecords[d]||{}).emailSentAt));
+ out.meta={...(local.meta||{}),...(remote.meta||{}),schemaVersion:12,lastSavedAt:wmMaxIso(local.meta&&local.meta.lastSavedAt,remote.meta&&remote.meta.lastSavedAt)};
+ out.syncMeta={revision:Math.max(+(local.syncMeta&&local.syncMeta.revision)||0,+(remote.syncMeta&&remote.syncMeta.revision)||0),updatedAt:wmMaxIso(local.syncMeta&&local.syncMeta.updatedAt,remote.syncMeta&&remote.syncMeta.updatedAt),deviceId:CloudSync.deviceId,touched:{},sections:{}};
+ const mapNames=['seen','mastered','wrong','fav','dayDone','dayRecords','schedule','dayTime','dayMetrics','dayFlow','daily','mailStatus'];mapNames.forEach(n=>{out.syncMeta.touched[n]={...((local.syncMeta.touched||{})[n]||{}),...((remote.syncMeta.touched||{})[n]||{})};});out.syncMeta.sections={...(local.syncMeta.sections||{}),...(remote.syncMeta.sections||{})};
+ out.progress=out.progress||{};let last=0;for(let d=1;d<=DAYS;d++)if(out.dayDone&&out.dayDone[d])last=d;out.progress.lastCompletedDay=Math.max(+out.progress.lastCompletedDay||0,last);out.progress.currentDay=(()=>{for(let d=1;d<=DAYS;d++)if(!(out.dayDone&&out.dayDone[d]))return d;return DAYS;})();
+ return ensureV12State(out);
+}
+
+function applyMergedRemote(remote,reason){
+ try{
+  commitDayTiming();const merged=mergeStates(S,remote);CloudSync.applyingRemote=true;S=merged;normalizeState();upgradeTo18Days();ensureV11State();ensureV12State();wmLocalSaveV11();CloudSync.lastSnapshot=wmClone(S);CloudSync.applyingRemote=false;
+  if(typeof cur!=='undefined'&&!SESS&&!REMEDY){try{go(cur||'Home');}catch(e){}}
+  renderCloudPanels();console.info('[wm cloud] merged',reason);
+ }catch(e){CloudSync.applyingRemote=false;console.error('[wm cloud] merge failed',e);CloudSync.lastError=String(e&&e.message||e);CloudSync.setStatus('error','진도 병합 오류 · 로컬 유지');}
+}
+
+const wmLocalSaveV11=save;
+CloudSync.lastSnapshot=wmClone(S);
+save=function(){
+ ensureV12State();if(!CloudSync.applyingRemote)markSyncChanges(CloudSync.lastSnapshot,S);
+ const ok=wmLocalSaveV11();CloudSync.lastSnapshot=wmClone(S);if(ok&&!CloudSync.applyingRemote)CloudSync.queue('state_change');return ok;
+};
+// 새 save 래퍼가 상태 스키마와 동기화 메타를 한 번 기록
+save();
+
+function cloudStatusLabel(){
+ if(CloudSync.status==='online')return CloudSync.message||'동기화 완료';
+ if(CloudSync.status==='syncing')return CloudSync.message||'동기화 중';
+ if(CloudSync.status==='offline')return CloudSync.message||'오프라인 저장';
+ if(CloudSync.status==='error')return CloudSync.message||'동기화 오류';return '클라우드 준비';
+}
+function updateCloudBadge(){
+ let b=document.getElementById('wmCloudBadge');if(!b&&document.getElementById('tbRight')){b=document.createElement('div');b.id='wmCloudBadge';document.getElementById('tbRight').appendChild(b);}if(!b)return;
+ b.className='cloud-pill '+(CloudSync.status||'idle');b.textContent=cloudStatusLabel();b.title=CloudSync.lastError||'PC·태블릿·모바일 실시간 진도 동기화';
+}
+function renderCloudPanels(){updateCloudBadge();document.querySelectorAll('[data-cloud-status]').forEach(x=>x.textContent=cloudStatusLabel());document.querySelectorAll('[data-cloud-last]').forEach(x=>x.textContent=CloudSync.lastSyncAt?fmtFull(CloudSync.lastSyncAt):'아직 없음');document.querySelectorAll('[data-cloud-device]').forEach(x=>x.textContent=CloudSync.deviceId.slice(-10));document.querySelectorAll('[data-cloud-error]').forEach(x=>x.textContent=CloudSync.lastError||'-');}
+function cloudPanelHtml(){return `<div class="cloud-panel"><div class="cloud-panel-head"><div><div style="font-family:var(--disp);font-size:18px;font-weight:700">☁ 다기기 진도 동기화</div><div class="mini" style="margin-top:4px">로컬 즉시 저장 + Firestore 자동 병합 · 기존 Root Voca 데이터와 분리 저장</div></div><span class="chip ${CloudSync.status==='online'?'green':CloudSync.status==='syncing'?'amber':'pink'}" data-cloud-status>${cloudStatusLabel()}</span></div><div class="cloud-grid"><div class="cloud-stat"><div class="k">마지막 동기화</div><div class="v" data-cloud-last>${CloudSync.lastSyncAt?fmtFull(CloudSync.lastSyncAt):'아직 없음'}</div></div><div class="cloud-stat"><div class="k">현재 기기</div><div class="v" data-cloud-device>${CloudSync.deviceId.slice(-10)}</div></div><div class="cloud-stat"><div class="k">저장 위치</div><div class="v">users/user · wm2000</div></div><div class="cloud-stat"><div class="k">최근 오류</div><div class="v" data-cloud-error>${CloudSync.lastError||'-'}</div></div></div><div class="sync-actions"><button type="button" class="btn btn-hero sm" onclick="wmManualSync()">지금 저장·동기화</button><button type="button" class="btn btn-ghost sm" onclick="wmReloadCloud()">클라우드 진도 병합</button><button type="button" class="btn btn-ghost sm" onclick="wmRunSelfCheckUI()">전체 기능 자가점검</button></div><div id="wmSelfCheckBox"></div></div>`;}
+async function wmManualSync(){save();if(!CloudSync.enabled){CloudSync.ready=false;await CloudSync.initialSync();}const ok=CloudSync.enabled?await CloudSync.flush():false;toast(ok?'✓ 모든 기기 진도 동기화 완료':'⚠ 로컬에는 저장됨 · 네트워크 확인');renderCloudPanels();}
+async function wmReloadCloud(){await CloudSync.reload();renderCloudPanels();}
+
+const wmBuildTopbarV11=buildTopbar;
+buildTopbar=function(){wmBuildTopbarV11();updateCloudBadge();};
+const wmRenderAdminV11=renderAdmin;
+renderAdmin=function(){wmRenderAdminV11();const v=document.getElementById('vAdmin');if(v&&!document.getElementById('wmCloudAdminPanel')){const holder=document.createElement('div');holder.id='wmCloudAdminPanel';holder.innerHTML=cloudPanelHtml();v.insertBefore(holder,v.firstChild);}renderCloudPanels();};
+const wmRenderConfigV11=renderConfig;
+renderConfig=function(){wmRenderConfigV11();const v=document.getElementById('vConfig');if(v){
+  v.querySelectorAll('.device-note').forEach(n=>{if(n.textContent.includes('localStorage')||n.textContent.includes('자동 동기화'))n.innerHTML='진도는 <b style="color:var(--green)">브라우저에 즉시 저장</b>되고 Firebase Firestore에도 자동 반영됩니다. PC·태블릿·모바일에서 학습자 비밀번호 <b>8081</b>로 접속하면 동일 진도를 이어갑니다. 오프라인 중 변경은 재연결 후 자동 병합됩니다.';});
+  if(!document.getElementById('wmCloudConfigPanel')){const holder=document.createElement('div');holder.id='wmCloudConfigPanel';holder.innerHTML=cloudPanelHtml();v.insertBefore(holder,v.firstChild);}
+  if(!document.getElementById('wmSpellCountRow')){const holder=document.createElement('div');holder.id='wmSpellCountRow';holder.className='card';holder.style.marginTop='18px';holder.innerHTML=`<div style="font-family:var(--disp);font-weight:700;font-size:19px;margin-bottom:4px">DAY 철자 회상</div><div class="mini" style="margin-bottom:12px">DAY 마지막에 한→영 정확 입력 · 타이핑은 핵심 철자 회상에만 사용합니다.</div><div class="cfg-row"><div><div class="cfg-label">회상 단어 수</div><div class="cfg-desc">오답·미숙달 단어 우선 출제</div></div><input type="number" class="num-input" min="3" max="20" value="${Math.max(3,Math.min(20,+S.config.spellingCount||10))}" onchange="wmSetSpellingCount(this.value)"></div>`;v.appendChild(holder);}
+ }renderCloudPanels();};
+function wmSetSpellingCount(v){S.config.spellingCount=Math.max(3,Math.min(20,+v||10));save();toast(`철자 회상 ${S.config.spellingCount}개로 저장`);renderConfig();}
+
+/* ===== DAY 철자 회상 복구 ===== */
+var DAY_SPELL=null;
+function dayFlowState(day){ensureV12State();S.dayFlow[day]=S.dayFlow[day]||{spellingDone:false,spellingAttempts:0,spellingCorrect:0,spellingIds:[]};return S.dayFlow[day];}
+function selectSpellingWords(day){
+ const n=Math.max(3,Math.min(20,+S.config.spellingCount||10)),ws=wordsOf(day),wrong=ws.filter(w=>(S.wrong[w[0]]||0)>0),weak=ws.filter(w=>!(S.wrong[w[0]]||0)&&(+S.mastered[w[0]]||0)<2),strong=ws.filter(w=>(+S.mastered[w[0]]||0)>=2);return [...shuffle(wrong),...shuffle(weak),...shuffle(strong)].slice(0,Math.min(n,ws.length));
+}
+function startDaySpellingRecall(day){
+ commitDayTiming();beginDayTiming(day);const words=selectSpellingWords(day);DAY_SPELL={day,words,i:0,correct:0};const f=dayFlowState(day);f.spellingAttempts=(+f.spellingAttempts||0)+1;f.spellingIds=words.map(w=>w[0]);save();$('#pgTitle').textContent='DAY 철자 회상';$('#pgSub').textContent=`DAY ${day} · ${words.length}개만 정확 입력`;renderDaySpellingInput();
+}
+function renderDaySpellingInput(){
+ const x=DAY_SPELL,w=x.words[x.i];stage('vQuiz',`<div class="spell-recall-card"><div class="q-head"><button class="btn btn-ghost sm" onclick="wmExitDaySpelling()">← 나가기</button><div class="q-prog">정답 ${x.correct} · ${x.i+1}/${x.words.length}</div></div><div class="progline"><i style="width:${x.i/x.words.length*100}%"></i></div><div class="card" style="margin-top:18px;text-align:center"><span class="chip cyan">철자 회상 · 한→영</span><div class="spell-recall-word">${w[4]}</div><input class="sa-input" id="wmSpellInput" placeholder="영어 철자를 입력하세요" autocomplete="off" autocapitalize="none" spellcheck="false"><div class="sa-feedback" id="wmSpellFb"></div><div id="wmSpellAnswer"></div><button type="button" class="btn btn-hero wfull tablet-action" style="margin-top:16px" id="wmSpellSubmit">확인</button></div></div>`);
+ const inp=$('#wmSpellInput'),btn=$('#wmSpellSubmit');inp.focus();btn.addEventListener('click',submitDaySpelling);inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submitDaySpelling();}});
+}
+function submitDaySpelling(){
+ const inp=$('#wmSpellInput');if(!inp||inp.dataset.lock)return;const x=DAY_SPELL,w=x.words[x.i],u=inp.value.trim().toLowerCase().replace(/\s+/g,''),a=w[3].toLowerCase().replace(/\s+/g,'');if(!u){toast('철자를 입력하세요');return;}const ok=u===a;recordDayMetric(x.day,w,ok,'subjective');const fb=$('#wmSpellFb'),ans=$('#wmSpellAnswer');
+ if(ok){inp.dataset.lock='1';inp.disabled=true;x.correct++;S.mastered[w[0]]=Math.max(1,+S.mastered[w[0]]||0);fb.style.color='var(--green)';fb.textContent='✓ 정확합니다';addXP(10,innerWidth/2,innerHeight*.55);save();setTimeout(()=>{x.i++;if(x.i>=x.words.length)finishDaySpelling();else renderDaySpellingInput();},380);}
+ else{S.mastered[w[0]]=0;S.wrong[w[0]]=(+S.wrong[w[0]]||0)+1;fb.style.color='var(--red)';fb.textContent='정답을 확인한 뒤 정확히 다시 입력하세요';ans.innerHTML=`<div class="input-answer-box">정답: ${w[3]}</div>`;inp.value='';inp.focus();save();}
+}
+function finishDaySpelling(){
+ const x=DAY_SPELL,f=dayFlowState(x.day);f.spellingDone=true;f.spellingCorrect=x.correct;f.spellingCompletedAt=new Date().toISOString();DAY_SPELL=null;save();confetti(innerWidth/2,innerHeight*.35,120);wmFinishDayOrContinueV11(x.day,true,true);
+}
+function wmExitDaySpelling(){DAY_SPELL=null;commitDayTiming();go('Home');}
+const wmFinishDayOrContinueV11=finishDayOrContinue;
+finishDayOrContinue=function(day,completeAfter,remedyDone=false){
+ const dp=dayProgress(day),remaining=dayWrongWords(day),eligibleBase=completeAfter&&dp.seen>=dp.total&&remaining.length===0;
+ if(eligibleBase&&!dayFlowState(day).spellingDone){startDaySpellingRecall(day);return;}
+ return wmFinishDayOrContinueV11(day,completeAfter,remedyDone);
+};
+
+/* ===== EmailJS 복구: Root Voca에서 사용하던 검증 설정 ===== */
+function wmMailParams(day,manual=false){
+ const dp=day?dayProgress(day):{seen:coveredCount(),total:TOTAL},m=day?dayMetricState(day):null,totQ=S.quizStat.done,accur=totQ?Math.round(S.quizStat.correct/totQ*100):0,L=levelInfo();
+ const text=manual?reportSummary():`WORD MASTER 수능2000 · DAY ${day} 완료\n완료 단어 ${dp.seen}/${dp.total}\n실제 학습시간 ${fmtActual(actualSeconds(day))}\n누적 문항 ${m?m.answered:totQ}\n현재 오답 ${wrongList().length}\n전체 진도 ${Math.round(coveredCount()/TOTAL*100)}%`;
+ return {to_email:WM_EMAIL_CONFIG.adminEmails[0],to_emails:WM_EMAIL_CONFIG.adminEmails.join(','),to_name:'WORD MASTER 관리자',from_name:'WORD MASTER 18DAY',reply_to:WM_EMAIL_CONFIG.adminEmails[0],subject:manual?'WORD MASTER 누적 학습 보고서':`WORD MASTER DAY ${day} 완료`,message:text,text_message:text,report_text:text,html_message:`<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.7">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`,user_name:manual?'학습자':`학습자 · DAY ${day} 완료`,report_date:new Date().toLocaleString('ko-KR'),progress:Math.round(coveredCount()/TOTAL*100),mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:1,recent_history:text,day_label:day?`DAY ${day}`:'누적',duration:day?fmtActual(actualSeconds(day)):fmtActual(totalActualSeconds())};
+}
+async function wmSendEmail(params){
+ if(!window.emailjs)throw new Error('EmailJS SDK를 불러오지 못했습니다');
+ return await emailjs.send(WM_EMAIL_CONFIG.serviceId,WM_EMAIL_CONFIG.templateId,params,{publicKey:WM_EMAIL_CONFIG.publicKey});
+}
+autoMailDayCompletion=function(day,detail={}){
+ ensureAdaptiveState();const rec=S.dayRecords[day]||{};if(rec.emailSentAt||S.mailStatus[day]==='sending'||detail.completionMethod==='admin_force')return;S.mailStatus[day]='sending';save();
+ wmSendEmail(wmMailParams(day,false)).then(()=>{S.mailStatus[day]='sent';S.dayRecords[day]=S.dayRecords[day]||{};S.dayRecords[day].emailSentAt=new Date().toISOString();S.pendingDayMails=(S.pendingDayMails||[]).filter(x=>+x!==+day);save();toast('✓ DAY 완료 메일 자동 발송');}).catch(e=>{console.error(e);S.mailStatus[day]='failed';S.pendingDayMails=S.pendingDayMails||[];if(!S.pendingDayMails.includes(day))S.pendingDayMails.push(day);save();toast('⚠ 메일은 대기열에 저장 · 다음 접속에서 재시도');});
+};
+mailReport=function(){toast('보고서 발송 중...');wmSendEmail(wmMailParams(0,true)).then(()=>toast('✓ 관리자에게 보고서 발송 완료')).catch(e=>{console.error(e);toast('⚠ 발송 실패 · EmailJS 허용 도메인 확인');});};
+retryPendingDayMails=function(){const day=(S.pendingDayMails||[]).find(d=>isDayDone(d)&&!(S.dayRecords[d]||{}).emailSentAt);if(day)autoMailDayCompletion(day,{completionMethod:(S.dayRecords[day]||{}).completionMethod});};
+
+/* ===== 관리자 자가점검 ===== */
+function wmRunSelfCheck(){
+ const checks=[];const add=(name,ok,detail,severity='ok')=>checks.push({name,ok:!!ok,detail,severity:ok?'ok':severity});
+ const counts=Array.from({length:DAYS},(_,i)=>wordsOf(i+1).length);add('단어 데이터 2,000개',TOTAL===2000,`${TOTAL}개`,'bad');add('18DAY 균등 재배치',counts.length===18&&counts.reduce((a,b)=>a+b,0)===TOTAL,counts.join(' · '),'bad');
+ add('실제시간 학습 흐름',typeof activeFocusDay!=='undefined'&&TITLES.Study[1].includes('실제 소요시간'),'실제 활성시간만 누적','bad');
+ add('누적 진도 구조',!!S.seen&&!!S.dayDone&&!!S.dayRecords&&!!S.dayMetrics,'단어·DAY·문항·오답 누적','bad');add('실제 활성시간 구조',!!S.dayTime&&Array.from({length:DAYS},(_,i)=>S.dayTime[i+1]).every(Boolean),fmtActual(totalActualSeconds()),'bad');
+ add('PC 숫자키 1~4',typeof bindKeys==='function','상단 숫자키·숫자패드 지원','bad');add('터치 선택',typeof PointerEvent!=='undefined'||('ontouchstart'in window),'보기 전체 터치 영역','warn');
+ add('오답 교정 4단계',typeof startWrongCorrection==='function'&&typeof renderRemedyReveal==='function'&&typeof renderRemedyInput==='function','객관식 재확인 → 나타내기 → 한→영 → 영→한','bad');
+ add('DAY 철자 회상',typeof startDaySpellingRecall==='function'&&+S.config.spellingCount>=3,`${S.config.spellingCount}개`,'bad');add('관리자 강제 수료',typeof adminForceCompleteThrough==='function','학습량·점수는 유지','bad');
+ add('Firestore 설정',!!WM_FIREBASE_CONFIG.projectId&&!!WM_FIREBASE_CONFIG.apiKey,WM_FIREBASE_CONFIG.projectId,'bad');add('클라우드 실행 상태',CloudSync.enabled,cloudStatusLabel(),navigator.onLine?'warn':'warn');
+ add('EmailJS 설정',!!WM_EMAIL_CONFIG.publicKey&&!!WM_EMAIL_CONFIG.serviceId&&!!WM_EMAIL_CONFIG.templateId,WM_EMAIL_CONFIG.adminEmails.join(', '),'bad');add('로컬 저장 검증',storageOK,'localStorage 즉시 저장','bad');
+ return checks;
+}
+function wmRunSelfCheckUI(){
+ const checks=wmRunSelfCheck(),box=document.getElementById('wmSelfCheckBox');if(!box)return checks;const okN=checks.filter(x=>x.ok).length;
+ box.innerHTML=`<div class="selfcheck-list"><div class="selfcheck-row"><b>점검 결과</b><span class="${okN===checks.length?'ok':'warn'}">${okN}/${checks.length} 통과</span></div>${checks.map(x=>`<div class="selfcheck-row"><span>${x.name}<br><small style="color:var(--txt3)">${x.detail}</small></span><span class="${x.ok?'ok':x.severity==='bad'?'bad':'warn'}">${x.ok?'정상':x.severity==='bad'?'오류':'확인 필요'}</span></div>`).join('')}</div>`;return checks;
+}
+
+/* ===== 로그인·오프라인·다른 탭 ===== */
+const wmEnterAppV11=enterApp;
+enterApp=async function(){
+ startSession();$('#loginScreen').style.display='none';$('#shell').classList.remove('hidden');buildSidebar();buildTopbar();
+ $('#pgTitle').textContent='진도 동기화';$('#pgSub').textContent='PC·태블릿·모바일 공통 진도를 확인합니다';document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#vHome').classList.add('on');$('#vHome').innerHTML='<div class="card" style="max-width:560px;margin:60px auto;text-align:center"><div style="font-size:44px">☁</div><div style="font-family:var(--disp);font-size:22px;font-weight:700;margin-top:10px">진도를 불러오고 있습니다</div><div class="mini" style="margin-top:8px">로컬 기록과 클라우드 기록을 안전하게 병합합니다.</div></div>';
+ await CloudSync.initialSync();go('Home');setTimeout(retryPendingDayMails,1200);
+};
+const wmLogoutV11=logout;
+logout=function(){commitDayTiming();save();CloudSync.flush();if(CloudSync.unsub){try{CloudSync.unsub();}catch(e){}CloudSync.unsub=null;}CloudSync.active=false;wmLogoutV11();};
+window.addEventListener('online',async()=>{CloudSync.setStatus('syncing','재연결 · 동기화 중');if(CloudSync.active){if(!CloudSync.enabled){CloudSync.ready=false;await CloudSync.initialSync();}else await CloudSync.flush();}retryPendingDayMails();});
+window.addEventListener('offline',()=>CloudSync.setStatus('offline','오프라인 · 로컬 저장'));
+window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const other=JSON.parse(e.newValue);applyMergedRemote(other,'same_origin_tab');}catch(err){}}});
+window.addEventListener('beforeunload',()=>{commitDayTiming();save();});
+
+// 초기 배지와 상태 표시
+updateCloudBadge();
 </script>
 
 </body>
