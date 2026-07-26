@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>2000_18DAY</title>
+<title>WORD MASTER 수능 2000</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -354,8 +354,8 @@ button{min-height:44px}
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div class="login-logo">W</div>
-    <div class="login-title">2000_18DAY</div>
-    <div class="login-sub">WORD MASTER 수능 2000 · 18일 완성</div>
+    <div class="login-title">WORD MASTER</div>
+    <div class="login-sub">비밀번호를 입력하세요</div>
     <div class="pin-display" id="pinDisplay"><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span></div>
     <div class="keypad" id="keypad"></div>
     <div class="login-hint">숫자 4자리를 누르면 자동으로 로그인됩니다</div>
@@ -404,50 +404,41 @@ function initEmailJS(){if(window.emailjs){try{emailjs.init(EMAILJS_PUBLIC_KEY);e
 let ROLE=null; // 'learner' | 'admin'
 
 /* ===== state ===== */
-// 저장 키는 구버전과 동일하게 유지한다. 키를 바꾸면 기존 누적 학습·오답 데이터가 끊어진다.
 const KEY='wm2000_v3';
-const SNAPSHOT_KEY='wm2000_v3_snapshot';
-const APP_DATA_VERSION=6;
-const APP_TITLE='2000_18DAY';
 const defState=()=>({
- schemaVersion:APP_DATA_VERSION,updatedAt:'',
  seen:{},mastered:{},wrong:{},fav:{},dayDone:{},
  streak:0,lastDate:'',xp:0,
  quizStat:{done:0,correct:0},
  history:[],daily:{},dayLog:{},
  sessions:[],   // 로그인/시험 세션 기록 {login, logout, dur, day, type, correct, total}
- config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},
- wrongDetail:{},
- wrongMeta:{},   // id -> 누적 오답 횟수·복습 일정·정복 이력
- wrongHistory:[],// 최근 오답 발생/재시험 정답/정복 이벤트 감사 로그
- mailLog:[]
+ // 관리자 설정
+ config:{
+  quizMode:'mc',        // 'mc'(객관식) | 'sa'(주관식)
+  enPct:50,             // 영→한 비율(%), 나머지는 한→영
+  quizCount:0,          // 문제 수 (0 = 그날 단어 전체 출제)
+  saThreshold:80        // 주관식 유사도 임계(%)
+ },
+ wrongDetail:{}, // day -> [{id, wrongCount}]  A4 오답표기용
+ wrongMeta:{},   // id -> {firstWrongDate,lastWrongDate,nextReviewDate,reviewCount,sourceDay,active}
+ mailLog:[]      // DAY 종료 보고 메일 기록
 });
-let S;let saveFailed=false;
-function obj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
-function parseStore(key){try{const raw=localStorage.getItem(key);if(!raw)return null;const o=JSON.parse(raw);return obj(o)?o:null;}catch(e){return null;}}
-function validWordId(id){const n=+id;return Number.isInteger(n)&&!!byId[n];}
-function cleanWordMap(map,mode='number'){const out={};if(!obj(map))return out;Object.keys(map).forEach(id=>{if(!validWordId(id))return;const v=map[id];if(mode==='boolean'){if(!!v)out[+id]=true;}else{const n=Math.max(0,Number(v)||0);if(n>0)out[+id]=n;}});return out;}
-function normalizeState(raw){const d=defState(),o=obj(raw)?raw:{};const n={...d,...o};
- n.config={...d.config,...(obj(o.config)?o.config:{})};
- n.seen=cleanWordMap(o.seen,'boolean');n.fav=cleanWordMap(o.fav,'boolean');n.mastered=cleanWordMap(o.mastered);n.wrong=cleanWordMap(o.wrong);
- n.dayDone=obj(o.dayDone)?o.dayDone:{};n.daily=obj(o.daily)?o.daily:{};n.dayLog=obj(o.dayLog)?o.dayLog:{};n.wrongDetail=obj(o.wrongDetail)?o.wrongDetail:{};n.wrongMeta=obj(o.wrongMeta)?o.wrongMeta:{};
- n.quizStat=obj(o.quizStat)?{done:Math.max(0,+o.quizStat.done||0),correct:Math.max(0,+o.quizStat.correct||0)}:{done:0,correct:0};
- n.history=Array.isArray(o.history)?o.history.slice(0,500):[];n.sessions=Array.isArray(o.sessions)?o.sessions.slice(0,500):[];n.mailLog=Array.isArray(o.mailLog)?o.mailLog.slice(0,200):[];n.wrongHistory=Array.isArray(o.wrongHistory)?o.wrongHistory.slice(0,2000):[];
- n.streak=Math.max(0,+o.streak||0);n.xp=Math.max(0,+o.xp||0);n.lastDate=typeof o.lastDate==='string'?o.lastDate:'';
- Object.keys(n.wrongMeta).forEach(id=>{if(!validWordId(id))delete n.wrongMeta[id];});
- Object.keys(n.wrong).forEach(id=>{const w=byId[+id],m=n.wrongMeta[id]=obj(n.wrongMeta[id])?n.wrongMeta[id]:{};m.firstWrongDate=m.firstWrongDate||n.lastDate||today();m.lastWrongDate=m.lastWrongDate||m.firstWrongDate;m.nextReviewDate=m.nextReviewDate||datePlus(m.lastWrongDate,3);m.reviewCount=Math.max(0,+m.reviewCount||0);m.totalWrongCount=Math.max(+m.totalWrongCount||0,n.wrong[id]||0);m.sourceDay=+m.sourceDay||w[1];m.active=true;});
- Object.keys(n.wrongMeta).forEach(id=>{const m=n.wrongMeta[id];if(!n.wrong[id])m.active=false;});
- n.schemaVersion=APP_DATA_VERSION;return n;}
-function load(){const primary=parseStore(KEY),snapshot=parseStore(SNAPSHOT_KEY);S=normalizeState(primary||snapshot||defState());
+let S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))||defState();}catch(e){S=defState();}
+ const d=defState();for(const k in d)if(!(k in S))S[k]=d[k];
+ for(const k in d.config)if(S.config[k]===undefined)S.config[k]=d.config[k];
+ // 마이그레이션: 옛 기본값(10문제) 사용자는 전체 출제로 전환
  if(!S._migrated_v4){if(S.config.quizCount===10)S.config.quizCount=0;S._migrated_v4=true;}
- // 30일판 누적 기록을 18일판에 보존·환산. 단어별 seen/wrong/mastered는 ID 기반으로 유지.
+ // 30일판 누적 기록을 18일판에 보존·환산한다. 단어별 seen/wrong/mastered는 ID 기반이라 그대로 유지된다.
  if(!S._migrated_18day){
   const remap=d=>d>0?Math.max(1,Math.min(DAYS,Math.ceil((+d||1)*DAYS/30))):0;
-  const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;t.lastMailAt=v.lastMailAt||t.lastMailAt;});
-  S.dayLog=merged;(S.sessions||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});(S.history||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});S.dayDone={};S._migrated_18day=true;
+  const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;
+   const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);
+   t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;t.lastMailAt=v.lastMailAt||t.lastMailAt;});
+  S.dayLog=merged;(S.sessions||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});
+  (S.history||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});S.dayDone={};S._migrated_18day=true;
  }
- save(true);}
-function save(skipSnapshot=false){try{S.schemaVersion=APP_DATA_VERSION;S.updatedAt=new Date().toISOString();const payload=JSON.stringify(S);const prev=localStorage.getItem(KEY);if(!skipSnapshot&&prev){try{const old=JSON.parse(prev);if(obj(old))localStorage.setItem(SNAPSHOT_KEY,prev);}catch(e){}}localStorage.setItem(KEY,payload);saveFailed=false;return true;}catch(e){console.error('학습 데이터 저장 실패',e);saveFailed=true;const t=document.querySelector&&document.querySelector('#toast');if(t)toast('저장 공간 오류: 백업 파일을 내려받으세요');return false;}}
+ save();}
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
 load();
 
 /* ===== 로그인 세션 추적 ===== */
@@ -483,15 +474,10 @@ const $=s=>document.querySelector(s);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1700);}
-const seenCount=()=>Object.keys(S.seen).filter(id=>validWordId(id)&&S.seen[id]).length;
-const masteredCount=()=>Object.keys(S.mastered).filter(id=>validWordId(id)&&S.mastered[id]>=2&&!S.wrong[id]).length;
-const wrongList=()=>Object.keys(S.wrong).filter(id=>validWordId(id)&&S.wrong[id]>0).map(id=>byId[+id]).filter(Boolean);
-const favList=()=>Object.keys(S.fav).filter(id=>validWordId(id)&&S.fav[id]).map(id=>byId[+id]).filter(Boolean);
-const cumulativeWrongCount=()=>Object.keys(S.wrongMeta||{}).reduce((sum,id)=>sum+(validWordId(id)?Math.max(0,+S.wrongMeta[id].totalWrongCount||0):0),0);
-const conqueredWrongCount=()=>Object.keys(S.wrongMeta||{}).filter(id=>validWordId(id)&&(+S.wrongMeta[id].totalWrongCount||0)>0&&!S.wrong[id]).length;
-function dayCumulativeWrongCount(day){return wordsOf(day).reduce((sum,w)=>sum+Math.max(0,+((S.wrongMeta[w[0]]||{}).totalWrongCount)||0),0);}
-function logWrongEvent(w,event,phase,note=''){S.wrongHistory=S.wrongHistory||[];const m=S.wrongMeta[w[0]]||{};S.wrongHistory.unshift({date:new Date().toISOString(),id:w[0],word:w[3],day:w[1],event,phase:phase||'',note,activeCount:S.wrong[w[0]]||0,totalWrongCount:m.totalWrongCount||0});if(S.wrongHistory.length>2000)S.wrongHistory.length=2000;}
-function resolveWrong(id,phase='manual-clear'){const w=byId[+id];if(!w)return;const m=S.wrongMeta[id]||(S.wrongMeta[id]={});S.wrong[id]=0;m.active=false;m.resolvedDate=today();m.lastCorrectDate=today();m.resolvedCount=(m.resolvedCount||0)+1;logWrongEvent(w,'resolved',phase);save();}
+const seenCount=()=>Object.keys(S.seen).length;
+const masteredCount=()=>Object.values(S.mastered).filter(v=>v>=2).length;
+const wrongList=()=>Object.keys(S.wrong).filter(id=>S.wrong[id]>0).map(id=>byId[+id]).filter(Boolean);
+const favList=()=>Object.keys(S.fav).filter(id=>S.fav[id]).map(id=>byId[+id]).filter(Boolean);
 function dayProgress(d){const ws=wordsOf(d);return{seen:ws.filter(w=>S.seen[w[0]]).length,total:ws.length};}
 function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(dayProgress(d).seen<dayProgress(d).total)return d;}return DAYS;}
 function currentDay(){ // 학습자 "며칠째": 완료한 DAY + 1, 최대 18
@@ -570,7 +556,7 @@ function svgIcon(t){const m={rect:'<rect x="4" y="4" width="16" height="16" rx="
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
  return `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">${m[t]||'<path d="'+t+'"/>'}</svg>`;}
 function buildSidebar(){const nav=ROLE==='admin'?NAV_ADMIN:NAV_LEARNER;const sb=$('#sidebar');
- sb.innerHTML=`<div class="brand"><div class="logo">W</div><div><div class="bt">2000_18DAY</div><div class="bs">WORD MASTER</div></div></div>
+ sb.innerHTML=`<div class="brand"><div class="logo">W</div><div><div class="bt">WORD MASTER</div><div class="bs">수능 2000</div></div></div>
   ${nav.map((n,i)=>`<button class="navlink${i===0?' on':''}" data-nav="${n[0]}" onclick="go('${n[0]}')">${svgIcon(n[2])}${n[1]}${n[0]==='Review'?'<span class="badge-n" id="navWrong" style="display:none">0</span>':''}</button>`).join('')}
   <div class="sb-spacer"></div>
   ${ROLE==='learner'?`<div class="lvl-card"><div class="row"><div class="lvl-badge" id="lvlBadge">1</div><div style="text-align:right"><div class="lv-title">레벨</div><div class="lv-n" id="lvlName">새싹</div></div></div><div class="xpbar"><i id="xpFill" style="width:0%"></i></div><div class="xp-txt" id="xpTxt">0 / 100 XP</div></div>`:''}
@@ -796,12 +782,13 @@ function submitSA(){const inp=$('#saInput');if(!inp||inp.dataset.done)return nex
  else{btn.textContent='정답 확인 중';btn.disabled=true;showWrongReveal(w,dir,nextQ);}
 }
 function gradeAnswer(w,ok,btn){if(!S.seen[w[0]])S.seen[w[0]]=true;const phase=SESS.phase||'main';
- if(ok){SESS.correct++;SESS.combo++;SESS.maxCombo=Math.max(SESS.maxCombo,SESS.combo);S.mastered[w[0]]=(S.mastered[w[0]]||0)+1;const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={});m.lastCorrectDate=today();
-  if(phase==='scheduled'&&S.wrong[w[0]]){m.lastReviewedDate=today();m.reviewCount=(m.reviewCount||0)+1;resolveWrong(w[0],'scheduled-review');}
-  else if(phase==='manual'&&S.mastered[w[0]]>=2&&S.wrong[w[0]]){resolveWrong(w[0],'manual-test');}
-  else if(phase==='retry'&&S.wrong[w[0]]){m.lastRetryCorrectDate=today();logWrongEvent(w,'retry-correct',phase,'3일 후 복습 유지');}
+ if(ok){SESS.correct++;SESS.combo++;SESS.maxCombo=Math.max(SESS.maxCombo,SESS.combo);S.mastered[w[0]]=(S.mastered[w[0]]||0)+1;
+  if(phase==='scheduled'&&S.wrong[w[0]]){S.wrong[w[0]]=0;const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={});m.active=false;m.lastReviewedDate=today();m.reviewCount=(m.reviewCount||0)+1;}
+  else if(phase==='manual'&&S.mastered[w[0]]>=2&&S.wrong[w[0]]){S.wrong[w[0]]=0;if(S.wrongMeta[w[0]])S.wrongMeta[w[0]].active=false;}
   const gain=10+Math.min(15,(SESS.combo-1)*3);SESS.gained+=gain;const r=btn.getBoundingClientRect();addXP(gain,r.right-40,r.top);if(SESS.combo>=3)confetti(r.left+r.width/2,r.top,40);
- }else{SESS.combo=0;S.mastered[w[0]]=0;S.wrong[w[0]]=(S.wrong[w[0]]||0)+1;if(!SESS.wrongThis.some(x=>x[0]===w[0]))SESS.wrongThis.push(w);const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={firstWrongDate:today(),reviewCount:0,totalWrongCount:0});m.firstWrongDate=m.firstWrongDate||today();m.lastWrongDate=today();m.nextReviewDate=datePlus(today(),3);m.sourceDay=w[1];m.active=true;m.lastPhase=phase;m.totalWrongCount=(m.totalWrongCount||0)+1;if(phase==='scheduled')m.reviewCount=(m.reviewCount||0)+1;logWrongEvent(w,'wrong',phase);}
+ }else{SESS.combo=0;S.mastered[w[0]]=0;S.wrong[w[0]]=(S.wrong[w[0]]||0)+1;if(!SESS.wrongThis.some(x=>x[0]===w[0]))SESS.wrongThis.push(w);
+  const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={firstWrongDate:today(),reviewCount:0});m.lastWrongDate=today();m.nextReviewDate=datePlus(today(),3);m.sourceDay=w[1];m.active=true;m.lastPhase=phase;if(phase==='scheduled')m.reviewCount=(m.reviewCount||0)+1;
+ }
  save();renderSidebar();
 }
 function nextQ(){if(SESS&&SESS.blocked)return;if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);}if(SESS.i===SESS.qs.length-1){finishQuiz();return;}SESS.i++;SESS.mode==='sa'?renderSA():renderMC();}
@@ -827,20 +814,7 @@ function renderDayFinal(main,retry){const remaining=retry?retry.wrongThis.length
  stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">DAY ${main.day} 학습 종료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="mail-note">종료 전 관리자에게 DAY별 진행내역과 테스트 결과를 전송합니다.</div></div>`);
  showCompletionGate({day:main.day,main,retry});
 }
-function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;return `[2000_18DAY · DAY ${p.day} 종료 보고]
-보고 시각: ${new Date().toLocaleString('ko-KR')}
-학습 진도: ${dp.seen}/${dp.total} (${Math.round(dp.seen/dp.total*100)}%)
-본 시험: ${p.main.correct}/${p.main.total} (${p.main.pct}%)
-본 시험 오답: ${p.main.wrongThis.length}개
-즉시 오답 재시험: ${retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음'}
-현재 DAY 미해결 오답: ${dayWrong}개
-DAY 누적 오답 발생: ${dayCumulativeWrongCount(p.day)}회
-전체 활성 오답: ${wrongList().length}개
-전체 누적 오답 발생: ${cumulativeWrongCount()}회
-정복한 오답 단어: ${conqueredWrongCount()}개
-오늘 3일 복습 대상: ${dueWrongList().length}개
-누적 진도: ${seenCount()}/${TOTAL}
-누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`}
+function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;return `[워드마스터 수능2000 DAY ${p.day} 종료 보고]\n보고 시각: ${new Date().toLocaleString('ko-KR')}\n학습 진도: ${dp.seen}/${dp.total} (${Math.round(dp.seen/dp.total*100)}%)\n본 시험: ${p.main.correct}/${p.main.total} (${p.main.pct}%)\n본 시험 오답: ${p.main.wrongThis.length}개\n즉시 오답 재시험: ${retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음'}\n현재 DAY 미해결 오답: ${dayWrong}개\n3일 복습 예정: ${dueWrongList().length}개\n누적 진도: ${seenCount()}/${TOTAL}\n누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`}
 function showCompletionGate(payload){pendingCompletion=payload;const retry=payload.retry;const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom"><div class="completion-gate-title">관리자 보고 전송</div><div class="mini" style="text-align:center;margin-top:6px">DAY ${payload.day} 종료 단계 · ${ADMIN_EMAIL}</div>
  <div class="completion-summary"><div><span class="mini">본 시험</span><b>${payload.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(payload.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div>
  <div class="mail-status" id="completionMailStatus">메일 전송을 준비하고 있습니다.</div><button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()">📧 관리자에게 전송</button>
@@ -848,7 +822,7 @@ function showCompletionGate(payload){pendingCompletion=payload;const retry=paylo
 function completionPayload(p){const pct=Math.round(seenCount()/TOTAL*100),tot=S.quizStat.done,accur=tot?Math.round(S.quizStat.correct/tot*100):0,L=levelInfo(),text=completionReportText(p);return{to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:text,day:p.day,day_report:text,report_text:text,message:text};}
 function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!st||!btn)return;btn.disabled=true;st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';if(!emailJSReady)initEmailJS();if(!window.emailjs||!emailJSReady){btn.disabled=false;st.className='mail-status err';st.textContent='EmailJS를 불러오지 못했습니다. 네트워크를 확인하거나 메일 앱 전송을 사용하세요.';return;}
  emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,completionPayload(pendingCompletion)).then(()=>{const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:'emailjs'});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;save();st.className='mail-status ok';st.textContent=`전송 완료: ${ADMIN_EMAIL}`;btn.style.display='none';$('#completionFallbackBtn').style.display='none';$('#completionDoneBtn').style.display='inline-flex';}).catch(e=>{console.error(e);btn.disabled=false;st.className='mail-status err';st.textContent='자동 전송에 실패했습니다. 다시 시도하거나 메일 앱으로 직접 보내세요.';});}
-function openCompletionMailApp(){if(!pendingCompletion)return;const subject=encodeURIComponent(`[2000_18DAY] DAY ${pendingCompletion.day} 학습·테스트 보고`),body=encodeURIComponent(completionReportText(pendingCompletion));location.href=`mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;const st=$('#completionMailStatus');st.className='mail-status';st.textContent='메일 앱이 열렸습니다. 전송을 완료한 뒤 아래 버튼을 누르세요.';const done=$('#completionDoneBtn');done.style.display='inline-flex';done.textContent='메일 앱 전송 완료 · 홈으로';done.onclick=()=>{const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:'mailto-confirmed'});save();closeCompletionGate();};}
+function openCompletionMailApp(){if(!pendingCompletion)return;const subject=encodeURIComponent(`[워드마스터] DAY ${pendingCompletion.day} 학습·테스트 보고`),body=encodeURIComponent(completionReportText(pendingCompletion));location.href=`mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;const st=$('#completionMailStatus');st.className='mail-status';st.textContent='메일 앱이 열렸습니다. 전송을 완료한 뒤 아래 버튼을 누르세요.';const done=$('#completionDoneBtn');done.style.display='inline-flex';done.textContent='메일 앱 전송 완료 · 홈으로';done.onclick=()=>{const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:'mailto-confirmed'});save();closeCompletionGate();};}
 function closeCompletionGate(){const g=document.querySelector('.completion-gate');if(g)g.remove();pendingCompletion=null;syncScheduleState();go('Home');}
 
 let keyHandler=null;
@@ -866,7 +840,7 @@ function renderReview(){const v=$('#vReview');
   const wl=el('div','wlist');list.forEach(w=>{const r=el('div','wrow',`<div><div class="w">${w[3]}</div><div class="m">${w[4]}</div></div>
     <div class="rt"><span class="chip gray">D${w[1]}</span>${mode==='wrong'?`<button class="icon-btn" data-clr="${w[0]}">✓</button>`:`<button class="icon-btn" data-unfav="${w[0]}">⭐</button>`}</div>`);wl.appendChild(r);});
   box.appendChild(wl);
-  box.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{resolveWrong(+b.dataset.clr,'manual-check');toast('오답 정복!');draw('wrong');seg.querySelector('[data-r=wrong]').textContent=`오답 (${wrongList().length})`;renderSidebar();});
+  box.querySelectorAll('[data-clr]').forEach(b=>b.onclick=()=>{S.wrong[+b.dataset.clr]=0;save();toast('오답 정복!');draw('wrong');seg.querySelector('[data-r=wrong]').textContent=`오답 (${wrongList().length})`;renderSidebar();});
   box.querySelectorAll('[data-unfav]').forEach(b=>b.onclick=()=>{S.fav[+b.dataset.unfav]=false;save();draw('fav');seg.querySelector('[data-r=fav]').textContent=`즐겨찾기 (${favList().length})`;});};
  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');draw(b.dataset.r);});
  draw('wrong');
@@ -930,7 +904,7 @@ function a4Page(day){const ws=wordsOf(day);const half=Math.ceil(ws.length/2);
  const answers=ws.map((w,i)=>`<b>${i+1}.</b>${i<half?w[4]:w[3]}`).join('  ');
  const wrongCount=ws.filter(w=>isWrong(w[0])).length;
  return `<div class="a4">
-   <div class="a4-head"><div class="a4-title">📚 2000_18DAY · DAY ${day} 단어시험</div>
+   <div class="a4-head"><div class="a4-title">📚 워드마스터 수능 2000 · DAY ${day} 단어시험</div>
      <div class="a4-meta"><span>수능 영단어 2000 (2023 개정)</span><span>${new Date().toLocaleDateString('ko-KR')}</span></div></div>
    <div class="a4-info"><span><b>이름</b> <span class="fill"></span></span><span><b>날짜</b> <span class="fill"></span></span><span><b>점수</b> <span class="fill"></span> / ${ws.length}</span>${wrongCount?`<span class="wrong-tag">★ 온라인 오답 ${wrongCount}개 표시됨</span>`:''}</div>
    <div class="a4-section-label">Ⅰ. 다음 단어의 뜻을 쓰시오 (영→한)</div>
@@ -986,22 +960,18 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
     <div class="akpi"><div class="lbl">완전 암기</div><div class="v grad-lime">${masteredCount()}</div></div>
     <div class="akpi"><div class="lbl">정답률</div><div class="v">${accur}%</div></div>
     <div class="akpi"><div class="lbl">학습한 날</div><div class="v grad-pink">${activeDays}</div></div>
-    <div class="akpi"><div class="lbl">활성 오답</div><div class="v" style="color:var(--red)">${wrongList().length}</div></div>
-    <div class="akpi"><div class="lbl">누적 오답 발생</div><div class="v" style="color:var(--amber)">${cumulativeWrongCount()}</div></div>
-    <div class="akpi"><div class="lbl">정복 오답 단어</div><div class="v grad-lime">${conqueredWrongCount()}</div></div>
-    <div class="akpi"><div class="lbl">오늘 복습 대상</div><div class="v grad-txt">${dueWrongList().length}</div></div>
   </div>
   <div class="tbl-wrap">
     <div class="tbl-head"><div style="font-family:var(--disp);font-weight:700;font-size:16px">DAY별 학습 내역</div>
       <span class="chip iris">${Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length}/${DAYS} 완료</span></div>
-    <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>활성 오답</th><th>누적 오답</th><th>상태</th><th>출력</th></tr></thead>
+    <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>오답</th><th>상태</th><th>출력</th></tr></thead>
     <tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1;const dp=dayProgress(d);const lg=S.dayLog[d]||{};const p=Math.round(dp.seen/dp.total*100);
       const wrongN=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
       const st=dp.seen===dp.total?'<span class="chip green">완료</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
       return `<tr><td class="num" style="font-weight:700">DAY ${d}</td><td class="num">${dp.seen}/${dp.total}</td>
         <td><div class="bar-cell"><div class="track"><i style="width:${p}%"></i></div><span class="num" style="color:var(--txt2);font-size:12px">${p}%</span></div></td>
         <td class="num">${lg.quizzes||0}회</td><td class="num">${lg.bestPct?lg.bestPct+'%':'-'}</td>
-        <td class="num" style="color:${wrongN?'var(--red)':'var(--txt3)'}">${wrongN}</td><td class="num">${dayCumulativeWrongCount(d)}</td><td>${st}</td>
+        <td class="num" style="color:${wrongN?'var(--red)':'var(--txt3)'}">${wrongN}</td><td>${st}</td>
         <td><button class="icon-btn" onclick="buildA4(${d})" title="시험지 출력">📄</button></td></tr>`;}).join('')}</tbody></table></div>
   </div>
   <div class="tbl-wrap">
@@ -1018,7 +988,6 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
       <button class="btn btn-hero" onclick="mailReport()">📧 보고서 발송</button>
       <button class="btn btn-ghost" onclick="downloadCSV()">⬇ DAY별 CSV</button>
       <button class="btn btn-ghost" onclick="downloadLogsCSV()">⬇ 로그인기록 CSV</button>
-      <button class="btn btn-ghost" onclick="downloadWrongHistoryCSV()">⬇ 오답이력 CSV</button>
       <button class="btn btn-ghost" onclick="backupJSON()">💾 백업(JSON)</button>
       <label class="btn btn-ghost" style="cursor:pointer">📂 복원<input type="file" accept=".json" style="display:none" onchange="restoreJSON(event)"></label>
     </div>
@@ -1028,17 +997,15 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
 /* ===== 리포트/이메일/내보내기 ===== */
 function reportSummary(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
  const doneDays=[];for(let d=1;d<=DAYS;d++)if(dayProgress(d).seen===dayProgress(d).total)doneDays.push(d);
- return `[2000_18DAY 누적 학습 리포트]
+ return `[워드마스터 수능2000 학습 리포트]
 생성일: ${new Date().toLocaleString('ko-KR')}
 ─────────────────────────
 ■ 전체 진도: ${pct}% (${seenCount()}/${TOTAL})
 ■ 완전 암기: ${masteredCount()}
 ■ 완료 DAY: ${doneDays.length}/${DAYS}
-■ 누적 정답률: ${accur}%
-■ 활성 오답 단어: ${wrongList().length}
-■ 누적 오답 발생: ${cumulativeWrongCount()}회
-■ 정복한 오답 단어: ${conqueredWrongCount()}
-■ 오늘 3일 복습 대상: ${dueWrongList().length}
+■ 정답률: ${accur}%
+■ 오답: ${wrongList().length}
+■ 오늘 3일 복습 예정: ${dueWrongList().length}
 ■ 연속 학습: ${S.streak}일
 ■ 레벨: Lv.${L.lv} ${L.name}
 ■ 시험 응시: ${S.sessions.length}회
@@ -1048,17 +1015,25 @@ ${S.sessions.slice(0,5).map(s=>`  ${fmtFull(s.login)} · D${s.day} · ${s.correc
 }
 function mailReport(){if(!emailJSReady){toast('메일 준비 중, 잠시 후 다시');initEmailJS();return;}
  toast('보고서 발송 중...');const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const hist=S.sessions.slice(0,10).map(s=>`${fmtFull(s.login)} · D${s.day} · ${s.correct}/${s.total} · ${fmtDur(s.dur)}`).join('\n')||'(없음)',summary=reportSummary();
- emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:summary+'\n\n최근 시험\n'+hist,report_text:summary,message:summary,active_wrong:wrongList().length,cumulative_wrong:cumulativeWrongCount(),conquered_wrong:conqueredWrongCount()}).then(()=>toast('✓ 관리자에게 발송 완료')).catch(e=>{console.error(e);toast('⚠ 발송 실패 · 설정 확인');});
+ const doneDays=[];for(let d=1;d<=DAYS;d++)if(dayProgress(d).seen===dayProgress(d).total)doneDays.push(d);
+ const hist=S.sessions.slice(0,10).map(s=>`${fmtFull(s.login)} · D${s.day} · ${s.correct}/${s.total} · ${fmtDur(s.dur)}`).join('\n')||'(없음)';
+ emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
+  to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),
+  progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,
+  level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:hist
+ }).then(()=>toast('✓ 관리자에게 발송 완료')).catch(e=>{console.error(e);toast('⚠ 발송 실패 · 설정 확인');});
 }
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);toast('내려받기');}
-function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','활성오답수','누적오답횟수','상태']];
- for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dayCumulativeWrongCount(d),dp.seen===dp.total?'완료':dp.seen?'진행':'미시작']);}
- dl(`2000_18DAY_DAY별_${today()}.csv`,'\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'text/csv;charset=utf-8');}
-function downloadLogsCSV(){let rows=[['접속시각','DAY','유형','소요시간(초)','정답','총문항','정답률(%)']];S.sessions.forEach(s=>{rows.push([fmtFull(s.login),s.day||'오답',s.type,s.dur,s.correct,s.total,s.total?Math.round(s.correct/s.total*100):0]);});dl(`2000_18DAY_시험기록_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
-function downloadWrongHistoryCSV(){let rows=[['일시','단어ID','단어','DAY','이벤트','단계','활성오답횟수','누적오답횟수','비고']];(S.wrongHistory||[]).forEach(x=>rows.push([x.date?new Date(x.date).toLocaleString('ko-KR'):'',x.id||'',x.word||'',x.day||'',x.event||'',x.phase||'',x.activeCount||0,x.totalWrongCount||0,x.note||'']));dl(`2000_18DAY_오답이력_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
-function backupJSON(){const pack={app:APP_TITLE,schemaVersion:APP_DATA_VERSION,exportedAt:new Date().toISOString(),state:S};dl(`2000_18DAY_누적백업_${today()}.json`,JSON.stringify(pack,null,2),'application/json');}
-function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result),raw=obj(o.state)?o.state:o;if(!obj(raw)||!obj(raw.seen))throw 0;localStorage.setItem(SNAPSHOT_KEY,JSON.stringify(S));S=normalizeState(raw);save(true);syncScheduleState();toast('누적 학습·오답 복원 완료');go('Admin');renderSidebar();}catch(err){console.error(err);toast('올바른 2000_18DAY 백업이 아니에요');}finally{e.target.value='';}};r.readAsText(f);}
+function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','오답수','상태']];
+ for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
+  rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dp.seen===dp.total?'완료':dp.seen?'진행':'미시작']);}
+ dl(`워드마스터_DAY별_${today()}.csv`,'\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'text/csv;charset=utf-8');}
+function downloadLogsCSV(){let rows=[['접속시각','DAY','유형','소요시간(초)','정답','총문항','정답률(%)']];
+ S.sessions.forEach(s=>{rows.push([fmtFull(s.login),s.day||'오답',s.type,s.dur,s.correct,s.total,s.total?Math.round(s.correct/s.total*100):0]);});
+ dl(`워드마스터_로그인기록_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
+function backupJSON(){dl(`워드마스터_백업_${today()}.json`,JSON.stringify(S),'application/json');}
+function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.seen)throw 0;S=o;const d=defState();for(const k in d)if(!(k in S))S[k]=d[k];for(const k in d.config)if(S.config[k]===undefined)S.config[k]=d.config[k];save();toast('복원 완료!');go('Admin');renderSidebar();}catch(err){toast('올바른 백업이 아니에요');}};r.readAsText(f);}
 
 /* ===== global keyboard ===== */
 document.addEventListener('keydown',e=>{
@@ -1069,9 +1044,6 @@ document.addEventListener('keydown',e=>{
 
 /* ===== init ===== */
 syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);
-window.addEventListener('pagehide',()=>save());
-window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});
-window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();}}catch(err){}}});
 buildKeypad();
 </script>
 </body>
