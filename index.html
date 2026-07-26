@@ -2940,5 +2940,222 @@ TITLES.Home[1]='복습과 신규 학습을 한 번에';TITLES.Quiz[1]='오답 �
 S.meta.schemaVersion=18;S.meta.finalBuild=WM_FINAL_BUILD;wm18EnsureState();save();wmWriteLocalBackup(true);document.title='WORD MASTER 수능 2000 · 적응형 오답 루틴 FINAL v18';
 </script>
 
+
+<style id="wm-v19-guided-wrong-style">
+.wm19-guide-wrap{display:grid;gap:14px}
+.wm19-step-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,95,132,.38);background:rgba(255,95,132,.10);color:#ffd4df;font-size:12px;font-weight:900;letter-spacing:.2px}
+.wm19-step-chip .n{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:999px;background:rgba(255,255,255,.10);font-size:13px}
+.wm19-main-prompt{padding:20px 18px;border-radius:22px;background:linear-gradient(180deg,rgba(14,23,46,.98),rgba(9,16,33,.98));border:1px solid rgba(0,229,212,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}
+.wm19-main-prompt .label{font-size:12px;color:var(--txt2);font-weight:800;margin-bottom:9px}
+.wm19-main-prompt .value{font-size:clamp(28px,5vw,48px);line-height:1.15;font-weight:950;letter-spacing:-.02em;text-align:center;color:#fff;word-break:keep-all}
+.wm19-status{font-size:13px;color:#dce7ff;line-height:1.7;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.10);border-radius:16px;padding:12px 14px}
+.wm19-reveal-panel{display:grid;gap:12px}
+.wm19-choice-box{padding:18px;border-radius:20px;border:1px solid var(--line2);background:rgba(255,255,255,.03);box-shadow:0 16px 32px rgba(0,0,0,.16)}
+.wm19-choice-box.wrong{border-color:rgba(255,99,138,.42);background:linear-gradient(180deg,rgba(76,18,35,.42),rgba(39,13,24,.28))}
+.wm19-choice-box.correct{border-color:rgba(0,229,212,.38);background:linear-gradient(180deg,rgba(10,57,61,.35),rgba(8,28,37,.28))}
+.wm19-choice-box .k{font-size:12px;font-weight:900;color:#d9deef;letter-spacing:.25px;text-transform:none;margin-bottom:8px}
+.wm19-choice-box .v{font-size:clamp(24px,4.2vw,38px);line-height:1.22;font-weight:950;word-break:keep-all}
+.wm19-choice-box.wrong .v{color:#ffd3de}
+.wm19-choice-box.correct .v{color:#b7fff7}
+.wm19-explain-card{display:grid;gap:10px;padding:18px;border-radius:22px;border:1px solid rgba(0,229,212,.25);background:linear-gradient(180deg,rgba(11,40,50,.60),rgba(8,24,34,.62))}
+.wm19-explain-card .title{font-size:18px;font-weight:950;color:#fff}
+.wm19-bullet{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);font-size:16px;line-height:1.72;color:#f4f8ff}
+.wm19-bullet::before{content:"";flex:0 0 9px;height:9px;border-radius:999px;background:var(--cyan);margin-top:9px;box-shadow:0 0 0 4px rgba(0,229,212,.12)}
+.wm19-memory-card{padding:20px;border-radius:22px;border:1px solid rgba(255,183,77,.30);background:linear-gradient(180deg,rgba(62,44,14,.42),rgba(40,29,10,.32));display:grid;gap:10px}
+.wm19-memory-card .title{font-size:18px;font-weight:950;color:#fff}
+.wm19-memory-line{font-size:clamp(22px,3.8vw,34px);line-height:1.45;font-weight:950;color:#fff;word-break:keep-all}
+.wm19-memory-line .a{color:#9efef4}
+.wm19-memory-line .b{color:#ffe59c}
+.wm19-memory-line .c{color:#ffcad8}
+.wm19-memory-note{font-size:15px;line-height:1.75;color:#f4f8ff}
+@media (max-width:720px){
+ .wm19-bullet{font-size:15px;line-height:1.68}
+ .wm19-choice-box .v{font-size:22px}
+ .wm19-memory-line{font-size:20px}
+}
+</style>
+<script id="wm-v19-guided-wrong-script">
+(function(){
+  WM_FINAL_BUILD='2026-07-26-v19';
+  function wm19StageEnable(btn,ms){
+    if(!btn) return;
+    btn.disabled=true;
+    btn.classList.remove('wm16-hold');
+    setTimeout(function(){
+      if(!btn || !document.body.contains(btn)) return;
+      btn.disabled=false;
+      btn.classList.add('wm16-hold');
+      btn.focus();
+      if(typeof wm16BindPrimary==='function') wm16BindPrimary(btn);
+    }, ms||1100);
+  }
+  function wm19Esc(v){ return typeof wm15Esc==='function' ? wm15Esc(v) : String(v==null?'':v); }
+  function wm19Prompt(w,dir,mode){
+    if(mode==='typing-ko') return w[4];
+    if(mode==='typing-en') return w[3];
+    return dir==='en' ? w[3] : w[4];
+  }
+  function wm19SelectedLabel(mode){
+    if(mode==='typing-ko' || mode==='typing-en') return '내가 입력한 답';
+    return '내가 고른 답';
+  }
+  function wm19CorrectLabel(mode){ return '정답'; }
+  function wm19BuildExplain(w,selected,dir,mode,userValue){
+    const lines=[];
+    if(mode==='typing-ko'){
+      lines.push('<b>'+wm19Esc(w[4])+'</b>에 해당하는 영어 표제어는 <b>'+wm19Esc(w[3])+'</b>입니다.');
+      lines.push('영어 입력은 철자 전체가 정확히 일치해야 합니다. 입력한 <b>'+wm19Esc(userValue)+'</b>와 정답 <b>'+wm19Esc(w[3])+'</b>를 글자 단위로 다시 보세요.');
+      lines.push('지금은 빨리 넘기지 말고 <b>'+wm19Esc(w[4])+' → '+wm19Esc(w[3])+'</b>를 한 세트로 각인합니다.');
+    } else if(mode==='typing-en'){
+      lines.push('<b>'+wm19Esc(w[3])+'</b>의 교재 뜻은 <b>'+wm19Esc(w[4])+'</b>입니다.');
+      lines.push('입력한 뜻 <b>'+wm19Esc(userValue)+'</b>에는 교재의 핵심 의미가 충분히 들어 있지 않습니다.');
+      lines.push('지금은 <b>'+wm19Esc(w[3])+' = '+wm19Esc(w[4])+'</b>를 그대로 연결해서 다시 기억합니다.');
+    } else if(dir==='en'){
+      lines.push('<b>'+wm19Esc(w[3])+'</b>의 교재 뜻은 <b>'+wm19Esc(w[4])+'</b>입니다.');
+      if(selected){
+        lines.push('선택한 <b>'+wm19Esc(selected[4])+'</b>는 <b>'+wm19Esc(selected[3])+'</b>의 뜻입니다.');
+        lines.push('즉, <b>'+wm19Esc(w[3])+'</b>와 <b>'+wm19Esc(selected[3])+'</b>는 서로 다른 단어입니다.');
+      }
+      lines.push('핵심 연결: <b>'+wm19Esc(w[3])+'</b>를 보면 <b>'+wm19Esc(w[4])+'</b>가 바로 떠올라야 합니다.');
+    } else {
+      lines.push('교재 뜻 <b>'+wm19Esc(w[4])+'</b>에 해당하는 표제어는 <b>'+wm19Esc(w[3])+'</b>입니다.');
+      if(selected){
+        lines.push('선택한 <b>'+wm19Esc(selected[3])+'</b>은(는) <b>'+wm19Esc(selected[4])+'</b>라는 뜻입니다.');
+        lines.push('즉, <b>'+wm19Esc(w[4])+'</b>를 보고 떠올려야 할 단어는 <b>'+wm19Esc(w[3])+'</b>입니다.');
+      }
+      lines.push('핵심 연결: <b>'+wm19Esc(w[4])+'</b>를 보면 <b>'+wm19Esc(w[3])+'</b>가 바로 떠올라야 합니다.');
+    }
+    return lines.map(function(line){ return '<div class="wm19-bullet">'+line+'</div>'; }).join('');
+  }
+  function wm19BuildMemory(w,selected,dir,mode){
+    let main='', note='';
+    if(mode==='typing-ko'){
+      main='<span class="b">'+wm19Esc(w[4])+'</span> <span style="opacity:.7">→</span> <span class="a">'+wm19Esc(w[3])+'</span>';
+      note='뜻을 보면 영어 철자가 한 번에 이어지도록 천천히 읽으세요.';
+    } else if(mode==='typing-en'){
+      main='<span class="a">'+wm19Esc(w[3])+'</span> <span style="opacity:.7">=</span> <span class="b">'+wm19Esc(w[4])+'</span>';
+      note='영어를 보면 교재 뜻이 바로 이어지도록 눈으로 한 번 더 확인하세요.';
+    } else if(dir==='en'){
+      main='<span class="a">'+wm19Esc(w[3])+'</span> <span style="opacity:.7">=</span> <span class="b">'+wm19Esc(w[4])+'</span>';
+      note=selected ? '혼동 주의: <span class="c">'+wm19Esc(selected[3])+'</span> = '+wm19Esc(selected[4]) : '정답 단어와 뜻을 한 세트로 묶어 기억합니다.';
+    } else {
+      main='<span class="b">'+wm19Esc(w[4])+'</span> <span style="opacity:.7">→</span> <span class="a">'+wm19Esc(w[3])+'</span>';
+      note=selected ? '혼동 주의: <span class="c">'+wm19Esc(selected[3])+'</span> = '+wm19Esc(selected[4]) : '뜻을 보면 정답 단어가 즉시 떠오르도록 다시 확인합니다.';
+    }
+    return '<div class="title">핵심 암기 문장</div><div class="wm19-memory-line">'+main+'</div><div class="wm19-memory-note">'+note+'</div>';
+  }
+  function wm19RevealFlow(cfg){
+    wm15Unbind();
+    const w=cfg.w, selected=cfg.selected||null, dir=cfg.dir||'en';
+    const prompt=cfg.prompt || wm19Prompt(w,dir,cfg.mode);
+    const stepLabels=cfg.stepLabels || ['내가 틀린 답 보기','정답 나타내기','차이 설명 보기','핵심 암기 문장 보기',cfg.finalButton||'이제 눌러서 암기하기'];
+    stage('vQuiz',
+      '<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">'+cfg.badge+'</span></div>'+wm15LoopStrip(2)+
+      '<div class="wm19-guide-wrap">'+
+        '<div class="wm19-step-chip"><span class="n" id="wm19StepNo">1</span><span id="wm19StepText">지금부터 오답을 천천히 확인합니다</span></div>'+
+        '<div class="wm19-main-prompt"><div class="label">문제 단서</div><div class="value">'+wm19Esc(prompt)+'</div></div>'+
+        '<div class="wm19-status" id="wm19Status">한 번에 모두 보여주지 않습니다. 먼저 무엇을 틀렸는지부터 또렷하게 확인하세요.</div>'+
+        '<div class="wm19-reveal-panel" id="wm19Panel"></div>'+
+        '<button type="button" class="btn btn-hero one-entry-btn" id="wm19NextBtn"><span class="wm16-count">1</span>'+stepLabels[0]+'</button>'+
+      '</div></div>'
+    );
+    const stepNo=$('#wm19StepNo'),stepText=$('#wm19StepText'),status=$('#wm19Status'),panel=$('#wm19Panel'),btn=$('#wm19NextBtn');
+    let step=0;
+    function setBtn(index,text){ btn.innerHTML='<span class="wm16-count">'+index+'</span>'+text; }
+    function wrongValue(){
+      if(cfg.mode==='typing-ko' || cfg.mode==='typing-en') return cfg.userValue || '입력값 없음';
+      return selected ? (dir==='en'? selected[4] : selected[3]) : '선택 정보 없음';
+    }
+    function correctValue(){
+      if(cfg.mode==='typing-ko') return w[3];
+      if(cfg.mode==='typing-en') return w[4];
+      return dir==='en' ? w[4] : w[3];
+    }
+    function afterWait(ms, nextLabel){ wm19StageEnable(btn,ms||1250); if(nextLabel) setBtn(step+1,nextLabel); }
+    wm19StageEnable(btn,950);
+    btn.addEventListener('click',function(){
+      btn.classList.remove('wm16-hold');
+      if(step===0){
+        panel.innerHTML='<div class="wm19-choice-box wrong"><div class="k">'+wm19SelectedLabel(cfg.mode)+'</div><div class="v">'+wm19Esc(wrongValue())+'</div></div>';
+        stepNo.textContent='1'; stepText.textContent='내가 무엇을 틀렸는지 확인';
+        status.textContent='방금 선택하거나 입력한 내용을 먼저 분명하게 봅니다. 바로 넘기지 말고 읽으세요.';
+        step=1; afterWait(1150,stepLabels[1]); return;
+      }
+      if(step===1){
+        panel.innerHTML += '<div class="wm19-choice-box correct"><div class="k">'+wm19CorrectLabel(cfg.mode)+'</div><div class="v">'+wm19Esc(correctValue())+'</div></div>';
+        stepNo.textContent='2'; stepText.textContent='정답을 또렷하게 보기';
+        status.textContent='정답을 크게 보여 줍니다. 눈으로 읽고, 소리 내어 읽을 수 있으면 더 좋습니다.';
+        step=2; afterWait(1400,stepLabels[2]); return;
+      }
+      if(step===2){
+        panel.innerHTML += '<div class="wm19-explain-card"><div class="title">왜 틀렸는지 천천히 설명</div>'+wm19BuildExplain(w,selected,dir,cfg.mode,cfg.userValue)+'</div>';
+        stepNo.textContent='3'; stepText.textContent='오답 이유 이해';
+        status.textContent='정답과 오답의 차이를 문장으로 다시 확인합니다. 이 단계는 이해 단계입니다.';
+        step=3; afterWait(1600,stepLabels[3]); return;
+      }
+      if(step===3){
+        panel.innerHTML += '<div class="wm19-memory-card">'+wm19BuildMemory(w,selected,dir,cfg.mode)+'</div>';
+        stepNo.textContent='4'; stepText.textContent='핵심 문장으로 각인';
+        status.textContent='이제 단어와 뜻을 한 덩어리로 묶어 기억합니다. 충분히 본 뒤 다음으로 이동하세요.';
+        step=4; afterWait(1550,stepLabels[4]); return;
+      }
+      wm15Unbind();
+      cfg.onDone();
+    }, {once:false});
+  }
+
+  wm15RenderInitialReveal=function(){
+    const x=WM_V15_INLINE; if(!x) return; const w=x.w, dir=x.dir, selected=x.selected;
+    dayMetricState(x.day).revealCount++; save();
+    wm19RevealFlow({
+      w:w, dir:dir, selected:selected,
+      badge:'● 방금 틀린 단어 · 누적 '+wm15WrongCount(w[0])+'회',
+      finalButton:'이제 눌러서 암기하기',
+      onDone:function(){ wm16RenderMemoryGate('initial'); }
+    });
+  };
+
+  wm16RenderRetryError=function(){
+    const x=WM_V15_INLINE; if(!x) return; const w=x.w, dir=x.dir, selected=x.selected;
+    wm19RevealFlow({
+      w:w, dir:dir, selected:selected,
+      badge:'재확인에서도 오답 · 다시 구분하기',
+      stepLabels:['재확인에서 고른 답 보기','정답 다시 보기','차이 설명 다시 보기','핵심 암기 문장 다시 보기','다시 눌러서 암기하기'],
+      onDone:function(){ wm16RenderMemoryGate('retry'); }
+    });
+  };
+
+  wm16RenderTypingError=function(userValue,correct,koToEn){
+    const x=WM_V15_INLINE; if(!x) return; const w=x.w;
+    wm19RevealFlow({
+      w:w, dir:koToEn?'ko':'en', selected:null, userValue:userValue,
+      mode:koToEn?'typing-ko':'typing-en',
+      badge:'주관식 오답 · '+(koToEn?'한→영':'영→한'),
+      stepLabels:['내가 입력한 답 보기','정답 나타내기','왜 다른지 설명 보기','핵심 암기 문장 보기','정답 다시 각인하기'],
+      onDone:function(){ wm15RenderTypingReveal(); }
+    });
+  };
+
+  if(typeof renderHomeLearner==='function'){
+    const _home=renderHomeLearner;
+    renderHomeLearner=function(){ _home(); const badge=document.querySelector('#vHome .v15-build'); if(badge) badge.textContent='FINAL v19'; const mk=document.querySelector('#vHome .wm18-build'); if(mk) mk.textContent='FINAL v19 · '+WM_FINAL_BUILD; };
+  }
+  if(typeof renderAdmin==='function'){
+    const _admin=renderAdmin;
+    renderAdmin=function(){ _admin(); const all=document.querySelectorAll('#vAdmin *'); all.forEach(function(n){ if(n.childNodes.length===1 && n.firstChild && n.firstChild.nodeType===3) n.textContent=n.textContent.replace(/FINAL v18/g,'FINAL v19'); }); };
+  }
+  if(typeof renderConfig==='function'){
+    const _cfg=renderConfig;
+    renderConfig=function(){ _cfg(); const v=$('#vConfig'); if(!v) return; const all=v.querySelectorAll('*'); all.forEach(function(n){ if(n.childNodes.length===1 && n.firstChild && n.firstChild.nodeType===3) n.textContent=n.textContent.replace(/FINAL v18/g,'FINAL v19'); }); };
+  }
+  if(typeof cloudPanelHtml==='function'){ const _cloud=cloudPanelHtml; cloudPanelHtml=function(){ return _cloud().replace(/FINAL v18/g,'FINAL v19').replace(/2026-07-26-v18/g,WM_FINAL_BUILD); }; }
+  if(typeof wmContinuityBannerHtml==='function'){ const _ban=wmContinuityBannerHtml; wmContinuityBannerHtml=function(){ return _ban().replace(/FINAL v18/g,'FINAL v19').replace(/2026-07-26-v18/g,WM_FINAL_BUILD); }; }
+  TITLES.Quiz[1]='오답 해설을 천천히 나타내며 확인';
+  S.meta=S.meta||{}; S.meta.schemaVersion=Math.max(19,+S.meta.schemaVersion||0); S.meta.finalBuild=WM_FINAL_BUILD; S.meta.wrongFlow='guided_step_reveal_v19';
+  save(); if(typeof wmWriteLocalBackup==='function') wmWriteLocalBackup(true);
+  document.title='WORD MASTER 수능 2000 · 오답 해설 나타내기 FINAL v19';
+})();
+</script>
+
 </body>
 </html>
