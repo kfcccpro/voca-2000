@@ -2327,7 +2327,7 @@ function wmRestoreLocalBackupNow(){var changed=wmMergeDiscoveredLocalBackup();sa
 </script>
 
 <style id="wm-v15-single-loop-style">
-/* FINAL v15 · 학습자 1회 진입형 통합 루프 */
+/* FINAL v16 · 학습자 1회 진입형 통합 루프 */
 :root{--tap-min:56px}
 .simple-home{max-width:760px;margin:0 auto}
 .simple-status{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
@@ -2370,7 +2370,7 @@ function wmRestoreLocalBackupNow(){var changed=wmMergeDiscoveredLocalBackup();sa
 </style>
 <script id="wm-v15-single-loop-script">
 /* ============================================================
-   FINAL v15 · 1회 진입형 테스트→암기→반복 통합 루프
+   FINAL v16 · 1회 진입형 테스트→암기→반복 통합 루프
    - 학습자 메뉴: 홈 / DAY만 노출
    - 오답은 별도 메뉴로 이탈시키지 않고 즉시 교정
    - 오답 표시: 방금 오답 / 이전 오답 이력
@@ -2378,7 +2378,7 @@ function wmRestoreLocalBackupNow(){var changed=wmMergeDiscoveredLocalBackup();sa
                  정답 나타내기 → 실패 방향 입력 → 반대 방향 입력
    - PC 1~4·숫자패드·Enter, 태블릿/모바일 전체 보기 터치
    ============================================================ */
-WM_FINAL_BUILD='2026-07-26-v15';
+WM_FINAL_BUILD='2026-07-26-v16';
 var WM_V15_INLINE=null;
 var WM_V15_KEY=null;
 var WM_V15_REVEAL_KEY=null;
@@ -2419,7 +2419,7 @@ renderHomeLearner=function(){
   '<div class="single-entry-hero"><div class="eyebrow">ONE ENTRY LEARNING</div><div class="day grad-txt">DAY '+cd+'</div><div class="summary">'+scheduleLabel(cd)+' · 남은 새 단어 '+Math.max(0,dp.total-dp.seen)+'개 · 누적 문항 '+m.answered+'</div>'+
   '<div class="loop-strip"><div class="loop-node on">1 테스트</div><div class="loop-node">2 즉시 암기</div><div class="loop-node">3 바로 반복</div></div>'+
   '<button class="btn btn-hero one-entry-btn" onclick="startTodayQuiz('+cd+')">▶ '+label+'</button><div class="learner-simple-note">오답은 화면을 나가지 않고 바로 나타내기·재시험·양방향 입력으로 이어집니다.</div></div>'+
-  '<div style="display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:13px"><span class="chip '+(storageOK?'green':'pink')+'">'+(storageOK?'자동 저장 정상':'저장 점검 필요')+'</span><span class="chip '+(CloudSync.status==='online'?'green':CloudSync.status==='syncing'?'amber':'pink')+'">'+cloudStatusLabel()+'</span><span class="v15-build">FINAL v15</span></div>'+
+  '<div style="display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin-top:13px"><span class="chip '+(storageOK?'green':'pink')+'">'+(storageOK?'자동 저장 정상':'저장 점검 필요')+'</span><span class="chip '+(CloudSync.status==='online'?'green':CloudSync.status==='syncing'?'amber':'pink')+'">'+cloudStatusLabel()+'</span><span class="v15-build">FINAL v16</span></div>'+
   '<div class="mini" style="text-align:center;margin-top:9px">최근 저장 '+wmFmtDateTime(last)+(rec.status==='in_progress'?' · 진행 중':'')+'</div></div>';
  updateActualTimeLabels();
 };
@@ -2526,11 +2526,11 @@ finishDayOrContinue=function(day,completeAfter,remedyDone){
 
 /* 설정 문구 및 문서 제목 */
 TITLES.Home[1]='한 번의 진입으로 테스트·암기·반복';TITLES.Quiz[0]='통합 학습';TITLES.Quiz[1]='오답 즉시 교정';TITLES.Study[1]='DAY별 누적 진행';
-(function(){wm15EnsureState();save();wmWriteLocalBackup(true);document.title='WORD MASTER 수능 2000 · 통합 학습 FINAL v15';})();
+(function(){wm15EnsureState();save();wmWriteLocalBackup(true);document.title='WORD MASTER 수능 2000 · 통합 학습 FINAL v16';})();
 </script>
 
 <script id="wm-v15-consistency-script">
-/* FINAL v15 표시 및 화면 제목 일관성 */
+/* FINAL v16 표시 및 화면 제목 일관성 */
 var wmStartTodayQuizV15Base=startTodayQuiz;
 startTodayQuiz=function(day){
  var result=wmStartTodayQuizV15Base(day);
@@ -2539,12 +2539,405 @@ startTodayQuiz=function(day){
 };
 if(typeof cloudPanelHtml==='function'){
  var wmCloudPanelHtmlV15Base=cloudPanelHtml;
- cloudPanelHtml=function(){return wmCloudPanelHtmlV15Base().replace(/FINAL v14/g,'FINAL v15').replace(/최종 누적관리 진단/g,'통합 학습 누적관리 진단');};
+ cloudPanelHtml=function(){return wmCloudPanelHtmlV15Base().replace(/FINAL v14/g,'FINAL v16').replace(/최종 누적관리 진단/g,'통합 학습 누적관리 진단');};
 }
 if(typeof wmContinuityBannerHtml==='function'){
  var wmContinuityBannerHtmlV15Base=wmContinuityBannerHtml;
- wmContinuityBannerHtml=function(){return wmContinuityBannerHtmlV15Base().replace(/FINAL v14/g,'FINAL v15');};
+ wmContinuityBannerHtml=function(){return wmContinuityBannerHtmlV15Base().replace(/FINAL v14/g,'FINAL v16');};
 }
+</script>
+
+
+<style id="wm-v16-deliberate-wrong-style">
+/* FINAL v16 · 오답을 서두르지 않고 확인→복습→암기하는 수동 진행형 */
+.wm16-explain{display:grid;gap:12px;margin:18px 0}
+.wm16-answer-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wm16-answer-box{border:1px solid var(--line);border-radius:17px;background:var(--bg2);padding:17px;text-align:left;min-height:104px}
+.wm16-answer-box.wrong{border-color:rgba(255,77,109,.5);background:rgba(255,77,109,.08)}
+.wm16-answer-box.correct{border-color:rgba(43,227,138,.48);background:rgba(43,227,138,.08)}
+.wm16-answer-box .k{font-size:11px;font-weight:900;letter-spacing:.5px;color:var(--txt3)}
+.wm16-answer-box.wrong .k{color:#ff8aa0}.wm16-answer-box.correct .k{color:var(--green)}
+.wm16-answer-box .v{font-size:21px;font-weight:850;margin-top:7px;word-break:keep-all}
+.wm16-why{border-left:4px solid var(--cyan);background:rgba(0,229,212,.07);border-radius:0 15px 15px 0;padding:16px 17px;text-align:left;color:var(--txt2);font-size:14px;line-height:1.75}
+.wm16-why b{color:var(--txt)}
+.wm16-memory{border:1px solid var(--line2);border-radius:21px;background:linear-gradient(155deg,rgba(108,92,231,.13),rgba(0,229,212,.05),var(--panel));padding:22px;text-align:center}
+.wm16-memory .prompt{font-size:25px;font-weight:900;word-break:keep-all;margin:9px 0 14px}
+.wm16-answer-stage{min-height:78px;border:1px dashed var(--line2);border-radius:16px;display:grid;place-items:center;padding:15px;background:var(--bg2);font-size:23px;font-weight:900;color:var(--cyan);word-break:keep-all}
+.wm16-answer-stage.masked{color:var(--txt3);letter-spacing:4px;filter:none}
+.wm16-link{min-height:45px;margin-top:12px;font-weight:850;color:var(--txt2);display:grid;place-items:center;line-height:1.6}
+.wm16-guide{margin:14px 0 12px;color:var(--txt2);font-size:13px;line-height:1.65}
+.wm16-char{opacity:0;display:inline-block;animation:wm16Char .28s var(--ease) forwards}
+@keyframes wm16Char{from{opacity:0;transform:translateY(7px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+.wm16-count{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;border-radius:999px;background:var(--panel2);border:1px solid var(--line2);font:800 12px var(--disp);margin-right:6px;color:var(--cyan)}
+.wm16-hold{animation:wm16Hold 1.2s ease-in-out infinite alternate}
+@keyframes wm16Hold{from{box-shadow:0 0 0 rgba(0,229,212,0)}to{box-shadow:0 0 24px rgba(0,229,212,.22)}}
+.wm16-typing-error{display:grid;gap:10px;margin:16px 0}
+.wm16-typing-error>div{border-radius:15px;padding:14px 16px;background:var(--bg2);border:1px solid var(--line);text-align:left}
+.wm16-typing-error .user{border-color:rgba(255,77,109,.45)}.wm16-typing-error .answer{border-color:rgba(43,227,138,.45)}
+.wm16-small{font-size:11px;font-weight:900;color:var(--txt3);margin-bottom:5px}.wm16-large{font-size:20px;font-weight:850;word-break:keep-all}
+@media(max-width:640px){
+ .wm16-answer-row{grid-template-columns:1fr}.wm16-answer-box{min-height:auto}.wm16-memory{padding:18px 14px}.wm16-memory .prompt,.wm16-answer-stage{font-size:20px}
+}
+</style>
+<script id="wm-v16-deliberate-wrong-script">
+/* ============================================================
+   FINAL v16 · 오답 수동 확인/복습/암기
+   1) 내가 고른 답과 정답을 비교하여 설명
+   2) 정답을 직접 눌러 나타내기
+   3) 양방향 연결 확인
+   4) 가리고 떠올린 뒤 다시 확인
+   5) 객관식 재확인 → 양방향 주관식
+   - 자동으로 빠르게 넘어가지 않고 학습자가 버튼을 눌러 진행
+   ============================================================ */
+WM_FINAL_BUILD='2026-07-26-v16';
+
+function wm16FindWord(id){return WORDS.find(function(o){return +o[0]===+id;})||null;}
+function wm16OptionText(o,dir){if(!o)return '선택 정보 없음';return dir==='en'?o[4]:o[3];}
+function wm16CorrectText(w,dir){return dir==='en'?w[4]:w[3];}
+function wm16PromptText(w,dir){return dir==='en'?w[3]:w[4];}
+function wm16Explain(w,selected,dir){
+ if(!selected)return dir==='en'
+  ? '<b>'+wm15Esc(w[3])+'</b>의 교재 뜻은 <b>'+wm15Esc(w[4])+'</b>입니다.'
+  : '교재 뜻 <b>'+wm15Esc(w[4])+'</b>에 해당하는 표제어는 <b>'+wm15Esc(w[3])+'</b>입니다.';
+ if(dir==='en')return '<b>'+wm15Esc(w[3])+'</b>의 교재 뜻은 <b>'+wm15Esc(w[4])+'</b>입니다. 선택한 <b>'+wm15Esc(selected[4])+'</b>는 <b>'+wm15Esc(selected[3])+'</b>의 뜻이므로 서로 다른 단어입니다.';
+ return '교재 뜻 <b>'+wm15Esc(w[4])+'</b>에 해당하는 표제어는 <b>'+wm15Esc(w[3])+'</b>입니다. 선택한 <b>'+wm15Esc(selected[3])+'</b>은(는) <b>'+wm15Esc(selected[4])+'</b>라는 뜻이므로 정답과 다릅니다.';
+}
+function wm16Animated(v){
+ var s=String(v==null?'':v);return Array.from(s).map(function(ch,i){var safe=ch===' '?'&nbsp;':wm15Esc(ch);return '<span class="wm16-char" style="animation-delay:'+Math.min(i*.045,1.15).toFixed(2)+'s">'+safe+'</span>';}).join('');
+}
+function wm16BindPrimary(btn){
+ wm15Unbind();
+ WM_V15_REVEAL_KEY=function(e){if((e.key==='Enter'||e.code==='Space')&&btn&&!btn.disabled){e.preventDefault();btn.click();}};
+ document.addEventListener('keydown',WM_V15_REVEAL_KEY);
+}
+function wm16EnableAfter(btn,ms){
+ btn.disabled=true;setTimeout(function(){if(!btn||!document.body.contains(btn))return;btn.disabled=false;btn.classList.add('wm16-hold');btn.focus();wm16BindPrimary(btn);},ms||900);
+}
+
+/* 메인 객관식 오답: 선택 정보까지 보존한 뒤 설명 화면으로 이동 */
+pickMC=function(btn,w){
+ if(!SESS||SESS.kind!=='main'){wmPickMCV14(btn,w);return;}
+ var opts=$('#opts');if(!opts||opts.dataset.lock)return;opts.dataset.lock='1';var ok=+btn.dataset.id===w[0],q=SESS.qs[SESS.i];
+ opts.querySelectorAll('.opt').forEach(function(b){b.disabled=true;if(+b.dataset.id===w[0])b.classList.add('correct');else if(b===btn)b.classList.add('wrong');});
+ gradeAnswer(w,ok,btn);
+ if(ok){setTimeout(nextQ,360);return;}
+ var selected=wm16FindWord(+btn.dataset.id);
+ WM_V15_INLINE={w:w,dir:q.dir,parentIndex:SESS.i,day:SESS.day,typingDirs:q.dir==='en'?['en','ko']:['ko','en'],typingIndex:0,typingCorrect:0,selected:selected,memoryContext:'initial'};
+ setTimeout(wm15RenderInitialReveal,780);
+};
+
+/* 1단계: 오답과 정답을 나란히 보여주고 의미 차이를 설명 */
+wm15RenderInitialReveal=function(){
+ wm15Unbind();var x=WM_V15_INLINE;if(!x)return;var w=x.w,dir=x.dir,selected=x.selected;
+ dayMetricState(x.day).revealCount++;save();
+ stage('vQuiz','<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">● 방금 틀린 단어 · 누적 '+wm15WrongCount(w[0])+'회</span></div>'+wm15LoopStrip(2)+'<div class="card"><div class="q-sub">서두르지 말고, 내가 고른 답과 정답의 차이를 확인하세요.</div><div class="wm16-explain"><div class="wm16-answer-row"><div class="wm16-answer-box wrong"><div class="k">내가 고른 답</div><div class="v">'+wm15Esc(wm16OptionText(selected,dir))+'</div></div><div class="wm16-answer-box correct"><div class="k">정답</div><div class="v">'+wm15Esc(wm16CorrectText(w,dir))+'</div></div></div><div class="wm16-why"><b>왜 오답인가?</b><br>'+wm16Explain(w,selected,dir)+'</div></div><button type="button" class="btn btn-hero one-entry-btn" id="wm16ExplainNext"><span class="wm16-count">1</span>오답 내용을 확인했습니다</button></div></div>');
+ var b=$('#wm16ExplainNext');wm16EnableAfter(b,1200);b.addEventListener('click',function(){wm15Unbind();wm16RenderMemoryGate('initial');},{once:true});
+};
+
+/* 눌러서 나타내기: 정답 보기 → 양방향 연결 → 가리고 회상 → 재확인 */
+function wm16RenderMemoryGate(context){
+ wm15Unbind();var x=WM_V15_INLINE;if(!x)return;var w=x.w,dir=context==='typing'?x.typingDirs[x.typingIndex]:x.dir;
+ var koToEn=dir==='ko',prompt=koToEn?w[4]:w[3],answer=koToEn?w[3]:w[4],mode=koToEn?'한→영':'영→한';
+ var heading=context==='typing'?'오답 단어 · '+mode+' 암기':'오답 단어 · 눌러서 암기';
+ stage('vQuiz','<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">'+heading+'</span></div>'+wm15LoopStrip(2)+'<div class="wm16-memory"><div class="q-sub">버튼을 한 단계씩 눌러 확인·복습·암기합니다.</div><div class="prompt">'+wm15Esc(prompt)+'</div><div class="wm16-answer-stage masked" id="wm16Answer">••••••</div><div class="wm16-link" id="wm16Link">먼저 정답을 머릿속으로 떠올려 보세요.</div><div class="wm16-guide" id="wm16Guide">자동으로 넘어가지 않습니다. 충분히 본 뒤 다음 버튼을 누르세요.</div><button type="button" class="btn btn-hero one-entry-btn" id="wm16MemoryBtn"><span class="wm16-count">1</span>정답 나타내기</button></div></div>');
+ var step=0,btn=$('#wm16MemoryBtn'),ans=$('#wm16Answer'),link=$('#wm16Link'),guide=$('#wm16Guide');wm16EnableAfter(btn,650);
+ btn.addEventListener('click',function(){
+  btn.classList.remove('wm16-hold');
+  if(step===0){ans.classList.remove('masked');ans.innerHTML=wm16Animated(answer);link.textContent='정답을 천천히 읽으세요.';guide.textContent='눈으로 단어와 뜻을 연결한 뒤 다음을 누르세요.';btn.innerHTML='<span class="wm16-count">2</span>양방향 연결 확인';step=1;return;}
+  if(step===1){link.innerHTML='<span style="color:var(--cyan)">'+wm15Esc(w[3])+'</span> &nbsp;⇄&nbsp; '+wm15Esc(w[4]);guide.textContent='영어를 보면 뜻이, 뜻을 보면 영어가 떠오르는지 확인하세요.';btn.innerHTML='<span class="wm16-count">3</span>가리고 떠올리기';step=2;return;}
+  if(step===2){ans.classList.add('masked');ans.textContent='••••••';link.textContent='정답을 가렸습니다. 머릿속으로 다시 떠올리세요.';guide.textContent='잠시 멈추고 회상한 뒤 정답을 다시 확인합니다.';btn.disabled=true;btn.innerHTML='<span class="wm16-count">3</span>회상 중…';step=3;setTimeout(function(){if(!btn||!document.body.contains(btn))return;btn.disabled=false;btn.innerHTML='<span class="wm16-count">4</span>정답 다시 확인';btn.classList.add('wm16-hold');btn.focus();},1500);return;}
+  if(step===3){ans.classList.remove('masked');ans.innerHTML=wm16Animated(answer);link.innerHTML='<span style="color:var(--cyan)">'+wm15Esc(w[3])+'</span> &nbsp;⇄&nbsp; '+wm15Esc(w[4]);guide.textContent='방금 떠올린 답과 실제 정답을 대조하세요.';btn.innerHTML=context==='typing'?'<span class="wm16-count">5</span>직접 입력하기':'<span class="wm16-count">5</span>객관식으로 다시 확인';step=4;return;}
+  wm15Unbind();if(context==='typing')wm15RenderTypingInput();else wm15RenderRetryMC();
+ });
+}
+
+/* 객관식 재확인에서 다시 틀리면 설명과 암기를 다시 거침 */
+wm15PickRetry=function(btn){
+ var x=WM_V15_INLINE,w=x.w,box=$('#wm15RetryOpts');if(!box||box.dataset.lock)return;box.dataset.lock='1';wm15Unbind();var ok=+btn.dataset.id===w[0],selected=wm16FindWord(+btn.dataset.id);
+ box.querySelectorAll('.opt').forEach(function(b){b.disabled=true;if(+b.dataset.id===w[0])b.classList.add('correct');else if(b===btn)b.classList.add('wrong');});
+ recordDayMetric(x.day,w,ok,'retry_mc');
+ if(ok){S.mastered[w[0]]=Math.max(1,+S.mastered[w[0]]||0);save();setTimeout(wm16RenderRetrySuccess,700);return;}
+ S.wrong[w[0]]=(+S.wrong[w[0]]||0)+1;S.mastered[w[0]]=0;S.wrongHistory[w[0]]=(+S.wrongHistory[w[0]]||0)+1;x.selected=selected;x.memoryContext='retry';save();setTimeout(wm16RenderRetryError,780);
+};
+function wm16RenderRetryError(){
+ wm15Unbind();var x=WM_V15_INLINE,w=x.w,dir=x.dir,selected=x.selected;
+ stage('vQuiz','<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">재확인에서도 오답 · 다시 암기</span></div>'+wm15LoopStrip(2)+'<div class="card"><div class="q-sub">같은 단어를 다시 틀렸습니다. 정답을 건너뛰지 말고 다시 확인하세요.</div><div class="wm16-explain"><div class="wm16-answer-row"><div class="wm16-answer-box wrong"><div class="k">내가 고른 답</div><div class="v">'+wm15Esc(wm16OptionText(selected,dir))+'</div></div><div class="wm16-answer-box correct"><div class="k">정답</div><div class="v">'+wm15Esc(wm16CorrectText(w,dir))+'</div></div></div><div class="wm16-why"><b>다시 구분하기</b><br>'+wm16Explain(w,selected,dir)+'</div></div><button class="btn btn-hero one-entry-btn" id="wm16RetryMem"><span class="wm16-count">1</span>다시 눌러서 암기하기</button></div></div>');
+ var b=$('#wm16RetryMem');wm16EnableAfter(b,1100);b.addEventListener('click',function(){wm15Unbind();wm16RenderMemoryGate('retry');},{once:true});
+}
+function wm16RenderRetrySuccess(){
+ wm15Unbind();var x=WM_V15_INLINE,w=x.w;
+ stage('vQuiz','<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">객관식 재확인 완료</span></div>'+wm15LoopStrip(3)+'<div class="card" style="text-align:center"><div class="inline-success">✓ 이번에는 정확히 선택했습니다.</div><div class="memory-pair"><div><div class="label">영어</div><div class="value" style="color:var(--cyan)">'+wm15Esc(w[3])+'</div></div><div><div class="label">교재 뜻</div><div class="value">'+wm15Esc(w[4])+'</div></div></div><button class="btn btn-hero one-entry-btn" id="wm16ToTyping">양방향 입력 암기로 이동</button></div></div>');
+ var b=$('#wm16ToTyping');wm16EnableAfter(b,850);b.addEventListener('click',function(){wm15Unbind();x.typingIndex=0;wm15RenderTypingReveal();},{once:true});
+}
+
+/* 주관식 전에도 정답을 즉시 노출하지 않고 직접 눌러 나타내기 */
+wm15RenderTypingReveal=function(){
+ wm15Unbind();var x=WM_V15_INLINE;if(!x)return;dayMetricState(x.day).revealCount++;save();wm16RenderMemoryGate('typing');
+};
+
+/* 주관식 오답은 즉시 재입력시키지 않고, 입력값-정답-설명을 확인한 뒤 다시 암기 */
+wm15SubmitTyping=function(){
+ var inp=$('#wm15Input');if(!inp||inp.dataset.lock)return;var x=WM_V15_INLINE,w=x.w,dir=x.typingDirs[x.typingIndex],koToEn=dir==='ko',val=inp.value.trim();if(!val){toast('답을 입력하세요');return;}
+ var ok=false,correct=koToEn?w[3]:w[4],score=0;if(koToEn){var u=val.toLowerCase().replace(/\s+/g,''),a=w[3].toLowerCase().replace(/\s+/g,'');ok=u===a;score=ok?100:Math.round(simRatio(u,a)*100);}else{var r=checkAnswer(val,w[4]);ok=r.ok;score=r.score;}
+ recordDayMetric(x.day,w,ok,'subjective');
+ if(!ok){S.wrong[w[0]]=(+S.wrong[w[0]]||0)+1;S.mastered[w[0]]=0;S.wrongHistory[w[0]]=(+S.wrongHistory[w[0]]||0)+1;save();wm16RenderTypingError(val,correct,koToEn);return;}
+ inp.dataset.lock='1';inp.disabled=true;var fb=$('#wm15Fb');fb.style.color='var(--green)';fb.textContent='✓ 정확합니다'+(score?' · '+score+'%':'');x.typingCorrect++;save();addXP(12,innerWidth/2,innerHeight*.55);
+ setTimeout(function(){if(x.typingIndex<x.typingDirs.length-1){x.typingIndex++;wm15RenderTypingReveal();}else wm15FinishInline();},650);
+};
+function wm16RenderTypingError(userValue,correct,koToEn){
+ wm15Unbind();var x=WM_V15_INLINE,w=x.w,mode=koToEn?'한→영':'영→한';
+ var explanation=koToEn?'영어 표제어는 철자 전체가 정확히 일치해야 합니다. <b>'+wm15Esc(w[4])+'</b>의 표제어는 <b>'+wm15Esc(w[3])+'</b>입니다.':'입력한 뜻에 교재의 핵심 의미가 충분히 포함되지 않았습니다. <b>'+wm15Esc(w[3])+'</b>의 교재 뜻은 <b>'+wm15Esc(w[4])+'</b>입니다.';
+ stage('vQuiz','<div class="integrated-card"><div class="integrated-head"><button class="btn btn-ghost sm" onclick="exitQuiz()">← 종료</button><span class="wrong-flag">주관식 오답 · '+mode+'</span></div>'+wm15LoopStrip(2)+'<div class="card"><div class="q-sub">바로 다시 입력하지 말고, 무엇이 달랐는지 확인하세요.</div><div class="wm16-typing-error"><div class="user"><div class="wm16-small">내가 입력한 답</div><div class="wm16-large">'+wm15Esc(userValue)+'</div></div><div class="answer"><div class="wm16-small">정답</div><div class="wm16-large" style="color:var(--cyan)">'+wm15Esc(correct)+'</div></div></div><div class="wm16-why"><b>확인할 점</b><br>'+explanation+'</div><button class="btn btn-hero one-entry-btn" id="wm16TypingAgain" style="margin-top:16px"><span class="wm16-count">1</span>정답 다시 각인하기</button></div></div>');
+ var b=$('#wm16TypingAgain');wm16EnableAfter(b,1200);b.addEventListener('click',function(){wm15Unbind();wm15RenderTypingReveal();},{once:true});
+}
+
+/* 버전/안내 문구 */
+S.meta=S.meta||{};S.meta.schemaVersion=Math.max(16,+S.meta.schemaVersion||0);S.meta.finalBuild=WM_FINAL_BUILD;S.meta.wrongFlow='deliberate_press_reveal';save();wmWriteLocalBackup(true);
+document.title='WORD MASTER 수능 2000 · 오답 꾹꾹 복습 FINAL v16';
+TITLES.Quiz[1]='오답 확인→복습→암기를 직접 눌러 진행';
+</script>
+
+<style id="wm-v17-adhd-review-style">
+/* FINAL v17 · ADHD 친화 오답 루틴: 즉시 교정 → DAY 마감 → 다음 DAY 예열 → D+3/D+7 */
+.wm17-routine-strip{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:13px 0 4px}
+.wm17-phase{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--bg2);border-radius:999px;padding:7px 11px;font-size:11px;font-weight:850;color:var(--txt2)}
+.wm17-phase.on{border-color:rgba(0,229,212,.55);background:rgba(0,229,212,.09);color:var(--cyan)}
+.wm17-phase.warn{border-color:rgba(255,180,67,.48);background:rgba(255,180,67,.09);color:var(--amber)}
+.wm17-review-card{max-width:700px;margin:0 auto}
+.wm17-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.wm17-review-title{font-family:var(--disp);font-size:21px;font-weight:850}
+.wm17-review-sub{font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.6}
+.wm17-mini-batch{font:800 11px var(--disp);color:var(--txt3);border:1px solid var(--line);border-radius:999px;padding:6px 10px}
+.wm17-note{border-left:4px solid var(--amber);background:rgba(255,180,67,.07);border-radius:0 14px 14px 0;padding:13px 15px;color:var(--txt2);font-size:12.5px;line-height:1.65;margin:12px 0 15px}
+.wm17-note b{color:var(--txt)}
+.wm17-db-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.wm17-db-summary>div{border:1px solid var(--line);background:var(--bg2);border-radius:15px;padding:13px;text-align:center}
+.wm17-db-summary .k{font-size:10px;color:var(--txt3);font-weight:800}.wm17-db-summary .v{font:850 22px var(--disp);margin-top:3px}
+.wm17-stage-chip{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:850;border:1px solid var(--line)}
+.wm17-stage-chip.active{color:var(--amber);border-color:rgba(255,180,67,.4);background:rgba(255,180,67,.08)}
+.wm17-stage-chip.stable{color:var(--green);border-color:rgba(43,227,138,.4);background:rgba(43,227,138,.08)}
+@media(max-width:640px){.wm17-db-summary{grid-template-columns:1fr 1fr}.wm17-db-summary>div:last-child{grid-column:1/-1}.wm17-review-title{font-size:18px}}
+</style>
+<script id="wm-v17-adhd-review-script">
+/* ============================================================
+   FINAL v17 · ADHD 친화 오답 루틴
+   - 즉시: v16의 천천히 누르는 확인/설명/암기 유지
+   - DAY 마지막: 당일 오답 중 위험도 높은 최대 10개 재시험
+   - 다음 DAY 시작 전: 전날 오답 최대 12개 + D+3/D+7 예정 최대 6개
+   - 한 번의 진입 안에서 자동 연결하고 별도 오답 메뉴 이동을 요구하지 않음
+   - 오답노트 DB는 영구 보존하며 정복 후에도 삭제하지 않음
+   ============================================================ */
+WM_FINAL_BUILD='2026-07-26-v17';
+var WM17_LIMITS={dayEnd:10,nextDay:12,spaced:6,batch:6};
+
+function wm17DateAdd(dateStr,days){var d=new Date(String(dateStr||today())+'T12:00:00');d.setDate(d.getDate()+(+days||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function wm17MinIso(a,b){if(!a)return b||'';if(!b)return a||'';return new Date(a)<=new Date(b)?a:b;}
+function wm17Unique(arr){return Array.from(new Set((arr||[]).map(function(x){return +x;}).filter(Boolean)));}
+function wm17LogKey(x){return [x.at||'',x.phase||'',x.dir||'',x.ok===false?'0':'1',x.day||0,x.source||''].join('|');}
+function wm17EnsureState(target){target=target||S;target.wrongNotebook=target.wrongNotebook&&typeof target.wrongNotebook==='object'&&!Array.isArray(target.wrongNotebook)?target.wrongNotebook:{};target.reviewConfig=target.reviewConfig&&typeof target.reviewConfig==='object'?target.reviewConfig:{};target.reviewConfig.dayEndMax=Math.max(1,+target.reviewConfig.dayEndMax||WM17_LIMITS.dayEnd);target.reviewConfig.nextDayMax=Math.max(1,+target.reviewConfig.nextDayMax||WM17_LIMITS.nextDay);target.reviewConfig.spacedMax=Math.max(0,+target.reviewConfig.spacedMax||WM17_LIMITS.spaced);target.reviewConfig.batchSize=Math.max(4,+target.reviewConfig.batchSize||WM17_LIMITS.batch);target.dayFlow=target.dayFlow||{};
+ Object.keys(target.wrongEver||{}).forEach(function(id){if(!target.wrongEver[id])return;var w=wm16FindWord(+id);if(!w)return;var e=target.wrongNotebook[id]||{};target.wrongNotebook[id]={id:+id,word:w[3],meaning:w[4],firstWrongAt:e.firstWrongAt||'',lastWrongAt:e.lastWrongAt||'',updatedAt:e.updatedAt||'',totalWrong:Math.max(+e.totalWrong||0,+((target.wrongHistory||{})[id]||0),1),directions:{en:+((e.directions||{}).en||0),ko:+((e.directions||{}).ko||0)},sourceDays:wm17Unique((e.sourceDays||[]).concat([w[1]])),status:e.status||'active',reviewStage:Math.max(0,+e.reviewStage||0),nextReviewDate:e.nextReviewDate||'',lastCorrectAt:e.lastCorrectAt||'',correctStreak:Math.max(0,+e.correctStreak||0),lastDirection:e.lastDirection||'',reviewLog:Array.isArray(e.reviewLog)?e.reviewLog.slice(-80):[]};});
+ target.meta=target.meta||{};target.meta.schemaVersion=Math.max(17,+target.meta.schemaVersion||0);target.meta.finalBuild=WM_FINAL_BUILD;target.meta.wrongNotebookPolicy='permanent';target.meta.reviewRoutine='immediate_dayend_d1_d3_d7';return target;}
+wm17EnsureState();
+
+function wm17Entry(id){wm17EnsureState();return S.wrongNotebook[String(id)]||S.wrongNotebook[id]||null;}
+function wm17NotebookList(){wm17EnsureState();return Object.keys(S.wrongNotebook).map(function(id){return S.wrongNotebook[id];}).filter(Boolean);}
+function wm17StageLabel(e){if(!e)return '-';if(e.status==='stabilized')return '안정화';if(+e.reviewStage<=0)return '당일';if(+e.reviewStage===1)return '다음날';if(+e.reviewStage===2)return 'D+3';if(+e.reviewStage===3)return 'D+7';return '유지';}
+function wm17RecordEvent(w,dir,day,phase,ok,source){wm17EnsureState();var now=new Date().toISOString(),id=String(w[0]),e=wm17Entry(id)||{id:w[0],word:w[3],meaning:w[4],firstWrongAt:'',lastWrongAt:'',updatedAt:'',totalWrong:0,directions:{en:0,ko:0},sourceDays:[],status:'active',reviewStage:0,nextReviewDate:'',lastCorrectAt:'',correctStreak:0,lastDirection:'',reviewLog:[]};e.word=w[3];e.meaning=w[4];e.sourceDays=wm17Unique((e.sourceDays||[]).concat([day||w[1]]));e.directions=e.directions||{en:0,ko:0};e.reviewLog=Array.isArray(e.reviewLog)?e.reviewLog:[];
+ if(ok===false){e.firstWrongAt=e.firstWrongAt||now;e.lastWrongAt=now;e.totalWrong=(+e.totalWrong||0)+1;e.directions[dir==='ko'?'ko':'en']=(+e.directions[dir==='ko'?'ko':'en']||0)+1;e.status='active';e.reviewStage=0;e.nextReviewDate=today();e.correctStreak=0;e.lastDirection=dir||e.lastDirection||'en';S.wrongEver=S.wrongEver||{};S.wrongEver[w[0]]=true;}else{e.lastCorrectAt=now;e.correctStreak=(+e.correctStreak||0)+1;}
+ e.updatedAt=now;e.reviewLog.push({at:now,date:today(),phase:phase||'main',dir:dir||'',ok:ok!==false,day:+day||0,source:source||''});if(e.reviewLog.length>80)e.reviewLog=e.reviewLog.slice(-80);S.wrongNotebook[id]=e;return e;}
+function wm17RecordWrong(w,dir,day,phase,source){var e=wm17RecordEvent(w,dir,day,phase,false,source);e.nextReviewDate=today();e.status='active';e.reviewStage=0;return e;}
+function wm17RecordReviewSuccess(w,dir,day,phase){var e=wm17RecordEvent(w,dir,day,phase,true,'scheduled_review');var base=today();if(phase==='day_end'){e.reviewStage=Math.max(1,+e.reviewStage||0);e.nextReviewDate=wm17DateAdd(base,1);e.status='active';}
+ else{if(+e.reviewStage<=1){e.reviewStage=2;e.nextReviewDate=wm17DateAdd(base,2);e.status='active';}else if(+e.reviewStage===2){e.reviewStage=3;e.nextReviewDate=wm17DateAdd(base,4);e.status='active';}else{e.reviewStage=4;e.nextReviewDate='';e.status='stabilized';}}
+ e.updatedAt=new Date().toISOString();S.wrongNotebook[String(w[0])]=e;return e;}
+
+/* 기존/클라우드 상태 병합 시 영구 오답노트도 항목별 병합 */
+function wm17MergeNotebook(a,b){a=a||{};b=b||{};var out={};new Set(Object.keys(a).concat(Object.keys(b))).forEach(function(id){var x=a[id],y=b[id];if(!x){out[id]=wmClone(y);return;}if(!y){out[id]=wmClone(x);return;}var logs=[],seen={};(x.reviewLog||[]).concat(y.reviewLog||[]).forEach(function(log){var k=wm17LogKey(log);if(!seen[k]){seen[k]=1;logs.push(log);}});logs.sort(function(p,q){return new Date(p.at||0)-new Date(q.at||0);});var newer=new Date(y.updatedAt||0)>new Date(x.updatedAt||0)?y:x;out[id]={...wmClone(newer),id:+id,word:newer.word||x.word||y.word,meaning:newer.meaning||x.meaning||y.meaning,firstWrongAt:wm17MinIso(x.firstWrongAt,y.firstWrongAt),lastWrongAt:wmMaxIso(x.lastWrongAt,y.lastWrongAt),updatedAt:wmMaxIso(x.updatedAt,y.updatedAt),totalWrong:Math.max(+x.totalWrong||0,+y.totalWrong||0,logs.filter(function(l){return l.ok===false;}).length),directions:{en:Math.max(+((x.directions||{}).en)||0,+((y.directions||{}).en)||0),ko:Math.max(+((x.directions||{}).ko)||0,+((y.directions||{}).ko)||0)},sourceDays:wm17Unique((x.sourceDays||[]).concat(y.sourceDays||[])),reviewLog:logs.slice(-80)};});return out;}
+if(typeof mergeStates==='function'){var wm17MergeStatesBase=mergeStates;mergeStates=function(local,remote){var out=wm17MergeStatesBase(local,remote);out.wrongNotebook=wm17MergeNotebook(local&&local.wrongNotebook,remote&&remote.wrongNotebook);out.reviewConfig=wmClone(globalAt(remote)>globalAt(local)?((remote&&remote.reviewConfig)||{}):((local&&local.reviewConfig)||{}));wm17EnsureState(out);return out;};}
+if(typeof markSyncChanges==='function'){var wm17MarkSyncBase=markSyncChanges;markSyncChanges=function(prev,next){wm17MarkSyncBase(prev,next);if(!wmDeepEqual(prev&&prev.wrongNotebook,next&&next.wrongNotebook))next.syncMeta.sections.wrongNotebook=Date.now();if(!wmDeepEqual(prev&&prev.reviewConfig,next&&next.reviewConfig))next.syncMeta.sections.reviewConfig=Date.now();};}
+
+/* 모든 오답 발생 지점을 영구 DB에 기록 */
+var wm17GradeBase=gradeAnswer;
+gradeAnswer=function(w,ok,btn){var dir=SESS&&SESS.qs&&SESS.qs[SESS.i]?SESS.qs[SESS.i].dir:'en',day=SESS&&SESS.day||w[1],kind=SESS&&SESS.kind||'main';wm17GradeBase(w,ok,btn);if(!ok){wm17RecordWrong(w,dir,day,kind==='main'?'immediate':'review',kind);save();}};
+var wm17RetryBase=wm15PickRetry;
+wm15PickRetry=function(btn){var x=WM_V15_INLINE,w=x&&x.w,dir=x&&x.dir,before=w?wm15WrongCount(w[0]):0;wm17RetryBase(btn);if(w&&wm15WrongCount(w[0])>before){wm17RecordWrong(w,dir,x.day,'retry_mc','inline');save();}};
+var wm17TypingBase=wm15SubmitTyping;
+wm15SubmitTyping=function(){var x=WM_V15_INLINE,w=x&&x.w,dir=x&&x.typingDirs&&x.typingDirs[x.typingIndex],before=w?wm15WrongCount(w[0]):0;wm17TypingBase();if(w&&wm15WrongCount(w[0])>before){wm17RecordWrong(w,dir,x.day,'subjective','inline');save();}};
+
+function wm17HadWrongOnDay(e,day){return !!(e&&Array.isArray(e.reviewLog)&&e.reviewLog.some(function(l){return l.ok===false&&+l.day===+day;}));}
+function wm17SortRisk(list){return list.sort(function(a,b){var ar=+a.totalWrong||0,br=+b.totalWrong||0;if(br!==ar)return br-ar;return new Date(b.lastWrongAt||0)-new Date(a.lastWrongAt||0);});}
+function wm17DayEndCandidates(day){wm17EnsureState();var flow=S.dayFlow[day]||{},cutoff=new Date(flow.dayEndReviewAt||0).getTime();var list=wm17NotebookList().filter(function(e){return e.status!=='stabilized'&&wm17HadWrongOnDay(e,day)&&new Date(e.lastWrongAt||0).getTime()>cutoff;});return wm17SortRisk(list).slice(0,S.reviewConfig.dayEndMax);}
+function wm17PreDayCandidates(day){wm17EnsureState();if(day<=1)return[];var prev=wm17SortRisk(wm17NotebookList().filter(function(e){return e.status!=='stabilized'&&wm17HadWrongOnDay(e,day-1);})).slice(0,S.reviewConfig.nextDayMax),ids={};prev.forEach(function(e){ids[e.id]=1;});var due=wm17SortRisk(wm17NotebookList().filter(function(e){return e.status!=='stabilized'&&e.nextReviewDate&&e.nextReviewDate<=today()&&!ids[e.id];})).slice(0,S.reviewConfig.spacedMax);return prev.concat(due);}
+function wm17ReviewDir(e,phase,index){if(phase==='day_end')return e.lastDirection||((index%2)?'ko':'en');if(e.lastDirection==='en')return'ko';if(e.lastDirection==='ko')return'en';return(index%2)?'en':'ko';}
+function wm17PhaseTitle(phase,day){return phase==='day_end'?'DAY '+day+' 마감 오답 점검':'DAY '+day+' 시작 전 오답 예열';}
+function wm17PhaseSub(phase){return phase==='day_end'?'오늘 틀린 단어임을 한 번 더 일깨우는 짧은 마감 테스트':'전날 오답과 복습 예정 단어를 먼저 확인한 뒤 정규 DAY로 자동 이동';}
+
+function wm17StartReviewSession(phase,day,entries,after){entries=(entries||[]).map(function(e){return {e:e,w:wm16FindWord(e.id)};}).filter(function(x){return x.w;});if(!entries.length){if(after)after();return;}startDay(day,'wm17_'+phase);SESS={kind:'wm17_review',phase:phase,day:day,qs:entries.map(function(x,i){return {w:x.w,entry:x.e,dir:wm17ReviewDir(x.e,phase,i)};}),i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),afterReview:after};$('#pgTitle').textContent=wm17PhaseTitle(phase,day);$('#pgSub').textContent=wm17PhaseSub(phase);renderMC();}
+
+var wm17RenderMCBase=renderMC;
+renderMC=function(){if(!SESS||SESS.kind!=='wm17_review'){wm17RenderMCBase();return;}wm15Unbind();var qs=SESS.qs,i=SESS.i,item=qs[i],w=item.w,dir=item.dir,e=item.entry,distract=shuffle(WORDS.filter(function(x){return x[0]!==w[0];})).slice(0,3),opts=shuffle([w].concat(distract)),q=dir==='en'?w[3]:w[4],label=dir==='en'?'이 단어의 뜻은?':'이 뜻을 가진 단어는?',batch=Math.floor(i/S.reviewConfig.batchSize)+1,batches=Math.ceil(qs.length/S.reviewConfig.batchSize);
+ stage('vQuiz','<div class="wm17-review-card"><div class="wm17-review-head"><div><div class="wm17-review-title">'+wm15Esc(wm17PhaseTitle(SESS.phase,SESS.day))+'</div><div class="wm17-review-sub">'+wm15Esc(wm17PhaseSub(SESS.phase))+'</div></div><div class="wm17-mini-batch">미니세트 '+batch+'/'+batches+' · '+(i+1)+'/'+qs.length+'</div></div><div class="wm17-routine-strip"><span class="wm17-phase '+(SESS.phase==='day_end'?'on':'')+'">당일 마감</span><span class="wm17-phase '+(SESS.phase==='pre_day'?'on':'')+'">다음날</span><span class="wm17-phase '+(+e.reviewStage>=2?'on':'')+'">D+3·D+7</span></div><div class="wm17-note"><b>이 단어는 오답노트 DB에 계속 남습니다.</b><br>정복해도 삭제하지 않고, 이후에는 ‘이전 오답’으로만 표시합니다.</div><div class="card"><div class="q-sub">'+label+' <span style="color:'+(dir==='en'?'var(--iris2)':'var(--cyan)')+'">['+(dir==='en'?'영→한':'한→영')+']</span> <span class="prior-wrong-flag">누적 오답 '+(+e.totalWrong||1)+'회</span></div><div class="q-word">'+wm15Esc(q)+'</div><div class="opts" id="opts">'+opts.map(function(o,k){return '<button type="button" class="opt" data-id="'+o[0]+'">'+wm15Esc(dir==='en'?o[4]:o[3])+'<span class="kbd">'+(k+1)+'</span></button>';}).join('')+'</div></div></div>');var buttons=$('#opts').querySelectorAll('.opt');buttons.forEach(function(b){b.addEventListener('click',function(){pickMC(b,w);},{once:true});});bindKeys();};
+
+var wm17PickMCBase=pickMC;
+pickMC=function(btn,w){if(!SESS||SESS.kind!=='wm17_review'){wm17PickMCBase(btn,w);return;}var opts=$('#opts');if(!opts||opts.dataset.lock)return;opts.dataset.lock='1';var item=SESS.qs[SESS.i],ok=+btn.dataset.id===w[0],selected=wm16FindWord(+btn.dataset.id);opts.querySelectorAll('.opt').forEach(function(b){b.disabled=true;if(+b.dataset.id===w[0])b.classList.add('correct');else if(b===btn)b.classList.add('wrong');});recordDayMetric(SESS.day,w,ok,'retry_mc');if(ok){SESS.correct++;wm17RecordReviewSuccess(w,item.dir,SESS.day,SESS.phase);S.mastered[w[0]]=Math.max(2,+S.mastered[w[0]]||0);save();setTimeout(nextQ,650);return;}S.wrong[w[0]]=(+S.wrong[w[0]]||0)+1;S.mastered[w[0]]=0;S.wrongHistory=S.wrongHistory||{};S.wrongHistory[w[0]]=(+S.wrongHistory[w[0]]||0)+1;wm17RecordWrong(w,item.dir,SESS.day,SESS.phase,'scheduled_review');save();WM_V15_INLINE={w:w,dir:item.dir,parentIndex:SESS.i,day:SESS.day,typingDirs:item.dir==='en'?['en','ko']:['ko','en'],typingIndex:0,typingCorrect:0,selected:selected,memoryContext:'scheduled_review'};setTimeout(wm15RenderInitialReveal,850);};
+
+var wm17NextQBase=nextQ;
+nextQ=function(){if(!SESS||SESS.kind!=='wm17_review'){wm17NextQBase();return;}wm15Unbind();if(SESS.i>=SESS.qs.length-1){finishQuiz();return;}SESS.i++;renderMC();};
+var wm17FinishQuizBase=finishQuiz;
+finishQuiz=function(){if(!SESS||SESS.kind!=='wm17_review'){wm17FinishQuizBase();return;}wm15Unbind();var x=SESS,after=x.afterReview;S.history.unshift({date:new Date().toISOString(),type:x.phase==='day_end'?'DAY 마감 오답 점검':'DAY 시작 전 오답 예열',day:x.day,correct:x.correct,total:x.qs.length,xp:0});if(S.history.length>250)S.history.length=250;recordQuizSession(x.day,x.phase==='day_end'?'DAY 마감 오답':'DAY 시작 전 오답',x.correct,x.qs.length,x.startMs);save();stage('vQuiz','<div class="result reward-burst"><div class="em">'+(x.phase==='day_end'?'🌙':'🌅')+'</div><div class="score">'+wm15Esc(wm17PhaseTitle(x.phase,x.day))+' 완료</div><div class="pct grad-txt">'+x.correct+'/'+x.qs.length+'</div><div class="card" style="margin:16px 0;padding:15px"><b style="color:var(--green)">오답 기록과 복습 단계가 저장되었습니다.</b><div class="mini" style="margin-top:5px">틀린 단어는 방금 확인·복습·암기했으며 오답노트 DB에는 계속 남습니다.</div></div></div>');setTimeout(function(){SESS=null;if(after)after();else go('Home');},900);};
+
+/* 다음 DAY 진입 시 오답 예열을 먼저 자동 실행 */
+var wm17StartTodayBase=startTodayQuiz;
+startTodayQuiz=function(day){wm17EnsureState();var flow=S.dayFlow[day]||(S.dayFlow[day]={});if(ROLE==='learner'&&+day===+currentDay()&&day>1&&flow.preReviewDoneDate!==today()){var list=wm17PreDayCandidates(day);if(list.length){return wm17StartReviewSession('pre_day',day,list,function(){flow.preReviewDoneDate=today();flow.preReviewCompletedAt=new Date().toISOString();flow.preReviewCount=list.length;save();wm17StartTodayBase(day);});}flow.preReviewDoneDate=today();flow.preReviewCompletedAt=new Date().toISOString();flow.preReviewCount=0;save();}return wm17StartTodayBase(day);};
+
+/* DAY 전체 분량이 끝나면 완료 화면 전에 당일 오답 마감 점검 */
+var wm17FinishDayBase=finishDayOrContinue;
+finishDayOrContinue=function(day,completeAfter,remedyDone){wm17EnsureState();var dp=dayProgress(day),flow=S.dayFlow[day]||(S.dayFlow[day]={});if(ROLE==='learner'&&completeAfter&&dp.seen>=dp.total){var list=wm17DayEndCandidates(day);if(list.length){return wm17StartReviewSession('day_end',day,list,function(){flow.dayEndReviewAt=new Date().toISOString();flow.dayEndReviewCount=list.length;save();wm17FinishDayBase(day,completeAfter,true);});}if(!flow.dayEndReviewAt){flow.dayEndReviewAt=new Date().toISOString();flow.dayEndReviewCount=0;save();}}return wm17FinishDayBase(day,completeAfter,remedyDone);};
+
+/* 홈은 단순성을 유지하면서 필요한 루틴 상태만 한 줄로 표시 */
+var wm17HomeBase=renderHomeLearner;
+renderHomeLearner=function(){wm17HomeBase();wm17EnsureState();var cd=currentDay(),pre=cd>1&&((S.dayFlow[cd]||{}).preReviewDoneDate!==today())?wm17PreDayCandidates(cd).length:0,ever=wm17NotebookList().length,active=wm17NotebookList().filter(function(e){return e.status!=='stabilized';}).length,hero=document.querySelector('#vHome .single-entry-hero');if(hero){var btn=hero.querySelector('.one-entry-btn');if(btn&&pre){btn.textContent='▶ 오답 예열 '+pre+'개 후 DAY '+cd+' 시작';}var old=hero.querySelector('.wm17-routine-strip');if(old)old.remove();var box=document.createElement('div');box.className='wm17-routine-strip';box.innerHTML='<span class="wm17-phase '+(pre?'warn':'')+'">시작 전 오답 '+pre+'</span><span class="wm17-phase">영구 오답노트 '+ever+'</span><span class="wm17-phase">복습 진행 '+active+'</span>';if(btn)hero.insertBefore(box,btn);else hero.appendChild(box);}var badge=document.querySelector('#vHome .v15-build');if(badge)badge.textContent='FINAL v17';};
+
+/* 관리자에게 영구 오답노트 DB를 가시화 */
+function wm17DownloadWrongNotebook(){var rows=[['ID','단어','뜻','최초오답','최근오답','누적오답','영한오답','한영오답','원DAY','단계','상태','다음복습일']];wm17SortRisk(wm17NotebookList()).forEach(function(e){rows.push([e.id,e.word,e.meaning,e.firstWrongAt||'',e.lastWrongAt||'',e.totalWrong||0,(e.directions||{}).en||0,(e.directions||{}).ko||0,(e.sourceDays||[]).join('/'),wm17StageLabel(e),e.status||'active',e.nextReviewDate||'']);});dl('워드마스터_영구오답노트_'+today()+'.csv','\uFEFF'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n'),'text/csv;charset=utf-8');}
+var wm17AdminBase=renderAdmin;
+renderAdmin=function(){wm17AdminBase();wm17EnsureState();var list=wm17SortRisk(wm17NotebookList()),active=list.filter(function(e){return e.status!=='stabilized';}),stable=list.filter(function(e){return e.status==='stabilized';}),v=$('#vAdmin');if(!v)return;var box=document.createElement('div');box.className='tbl-wrap';box.innerHTML='<div class="tbl-head"><div><div style="font-family:var(--disp);font-weight:700;font-size:17px">영구 오답노트 DB</div><div class="mini">한 번 오답으로 기록된 단어는 정복 후에도 삭제하지 않습니다.</div></div><button class="btn btn-ghost sm" onclick="wm17DownloadWrongNotebook()">CSV 저장</button></div><div style="padding:0 20px 18px"><div class="wm17-db-summary"><div><div class="k">누적 등록</div><div class="v">'+list.length+'</div></div><div><div class="k">복습 진행</div><div class="v" style="color:var(--amber)">'+active.length+'</div></div><div><div class="k">안정화</div><div class="v" style="color:var(--green)">'+stable.length+'</div></div></div></div><div style="max-height:360px;overflow:auto"><table><thead><tr><th>단어</th><th>누적</th><th>방향</th><th>단계</th><th>최근 오답</th></tr></thead><tbody>'+list.slice(0,60).map(function(e){return '<tr><td><b>'+wm15Esc(e.word)+'</b><div class="mini">'+wm15Esc(e.meaning)+'</div></td><td class="num">'+(+e.totalWrong||0)+'회</td><td class="num">영→한 '+(+((e.directions||{}).en)||0)+' / 한→영 '+(+((e.directions||{}).ko)||0)+'</td><td><span class="wm17-stage-chip '+(e.status==='stabilized'?'stable':'active')+'">'+wm15Esc(wm17StageLabel(e))+'</span></td><td class="num" style="white-space:nowrap">'+(e.lastWrongAt?fmtFull(e.lastWrongAt):'-')+'</td></tr>';}).join('')+'</tbody></table></div>';v.appendChild(box);};
+
+var wm17ConfigBase=renderConfig;
+renderConfig=function(){wm17ConfigBase();var v=$('#vConfig');if(!v)return;var c=document.createElement('div');c.className='card';c.style.marginTop='18px';c.innerHTML='<div style="font-family:var(--disp);font-weight:700;font-size:18px">ADHD 친화 오답 루틴 · FINAL v17</div><div class="mini" style="margin:5px 0 14px;line-height:1.75">같은 단어를 끝없이 반복하지 않고, 짧은 회상 시점을 분산합니다. 학습자는 한 번 진입하면 오답 예열 → 정규 DAY → 즉시 교정 → DAY 마감 점검까지 자동으로 이어집니다.</div><div class="wm17-routine-strip" style="justify-content:flex-start"><span class="wm17-phase on">즉시 꾹꾹 교정</span><span class="wm17-phase">DAY 마감 최대 '+S.reviewConfig.dayEndMax+'</span><span class="wm17-phase">다음날 최대 '+S.reviewConfig.nextDayMax+'</span><span class="wm17-phase">D+3·D+7 최대 '+S.reviewConfig.spacedMax+'</span></div><div class="wm17-note"><b>반복 중단 기준</b><br>D+7까지 정답이면 ‘안정화’로 전환하고 자동 반복에서 제외합니다. 다시 틀리면 다음날 복습으로만 되돌리며, 영구 오답 이력은 삭제하지 않습니다.</div>';v.appendChild(c);};
+
+/* 버전 표기 일관성 */
+if(typeof cloudPanelHtml==='function'){var wm17CloudBase=cloudPanelHtml;cloudPanelHtml=function(){return wm17CloudBase().replace(/FINAL v1[456]/g,'FINAL v17');};}
+if(typeof wmContinuityBannerHtml==='function'){var wm17BannerBase=wmContinuityBannerHtml;wmContinuityBannerHtml=function(){return wm17BannerBase().replace(/FINAL v1[456]/g,'FINAL v17');};}
+TITLES.Home[1]='오답 예열부터 DAY 마감까지 한 번에';TITLES.Quiz[1]='오답을 천천히 확인하고 분산 반복';
+S.meta.schemaVersion=17;S.meta.finalBuild=WM_FINAL_BUILD;save();wmWriteLocalBackup(true);document.title='WORD MASTER 수능 2000 · ADHD 오답 루틴 FINAL v17';
+</script>
+
+<style id="wm-v18-adaptive-review-style">
+.wm18-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid var(--line2);background:var(--panel2);color:var(--txt2)}
+.wm18-chip.d1{color:var(--cyan);border-color:rgba(0,229,212,.35)}
+.wm18-chip.d3{color:var(--amber);border-color:rgba(255,180,67,.38)}
+.wm18-chip.d6{color:var(--iris2);border-color:rgba(139,123,255,.42)}
+.wm18-chip.focus{color:var(--pink);border-color:rgba(255,93,162,.42)}
+.wm18-focus-card{max-width:720px;margin:0 auto;background:linear-gradient(145deg,rgba(255,93,162,.13),rgba(108,92,231,.12),var(--panel));border:1px solid rgba(255,93,162,.38);border-radius:26px;padding:24px}
+.wm18-focus-title{font-family:var(--disp);font-size:22px;font-weight:800;color:var(--pink);margin-bottom:5px}
+.wm18-focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+.wm18-focus-grid>div{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px}
+.wm18-focus-grid .k{font-size:11px;color:var(--txt3);font-weight:800;margin-bottom:5px}
+.wm18-focus-grid .v{font-size:18px;font-weight:800;word-break:keep-all}
+.wm18-queue-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 20px 18px}
+.wm18-queue-grid>div{background:var(--bg);border:1px solid var(--line);border-radius:15px;padding:13px}
+.wm18-queue-grid .k{font-size:11px;color:var(--txt3);font-weight:700}.wm18-queue-grid .v{font-family:var(--disp);font-weight:800;font-size:24px;margin-top:3px}
+.wm18-review-input{max-width:680px;margin:0 auto}
+.wm18-type-note{margin:10px 0 16px;padding:11px 14px;border-radius:13px;background:rgba(0,229,212,.07);border:1px solid rgba(0,229,212,.2);font-size:12.5px;color:var(--txt2)}
+@media(max-width:720px){.wm18-focus-grid{grid-template-columns:1fr}.wm18-queue-grid{grid-template-columns:1fr 1fr}.wm18-focus-card{padding:18px}}
+</style>
+<script id="wm-v18-adaptive-review-script">
+/* ============================================================
+   FINAL v18 · 적응형 오답 큐 통합
+   - 영구 오답 DB와 활성 복습 큐 분리
+   - 반응시간, 오답 유형, 혼동 보기 기록
+   - D0 → D+1 → 조건부 D+3 → D+6 → 집중 케어
+   - DAY 마감 최대 5개, DAY 시작 전 총복습 최대 10개
+   - 기존 v16/v17의 천천히 누르는 오답 교정 흐름 유지
+   ============================================================ */
+WM_FINAL_BUILD='2026-07-26-v18';
+var WM18_LIMITS={dayEnd:5,startTotal:10,d1:8,d3:4,batch:6,fastMs:4000,slowMs:6000};
+var WM18_LAST_RESPONSE_MS=0,WM18_SELECTED_ID=0,WM18_CURRENT_SOURCE='',WM18_CURRENT_TYPE='',WM18_REVEAL_COUNTED=false;
+
+function wm18DateDiff(a,b){var x=new Date(String(a||today())+'T12:00:00'),y=new Date(String(b||today())+'T12:00:00');return Math.floor((y-x)/86400000);}
+function wm18UniqueStrings(a){return Array.from(new Set((a||[]).map(function(x){return String(x||'').trim();}).filter(Boolean)));}
+function wm18TypeMap(x){var out={};if(Array.isArray(x)){x.forEach(function(k){out[k]=(+out[k]||0)+1;});return out;}Object.keys(x||{}).forEach(function(k){out[k]=Math.max(0,+x[k]||0);});return out;}
+function wm18QueueStageFromLegacy(e){if(!e)return'D1_DUE';if(e.status==='stabilized'||+e.reviewStage>=4)return'STABLE';if(+e.reviewStage===2)return'D3_DUE';if(+e.reviewStage===3)return'D6_DUE';return'D1_DUE';}
+function wm18StageLabel(stage){return stage==='D1_DUE'?'D+1':stage==='D3_DUE'?'D+3':stage==='D6_DUE'?'D+6':stage==='FOCUS_CARE'?'집중 케어':stage==='STABLE'?'안정화':'대기';}
+function wm18StageClass(stage){return stage==='D1_DUE'?'d1':stage==='D3_DUE'?'d3':stage==='D6_DUE'?'d6':stage==='FOCUS_CARE'?'focus':'';}
+function wm18EnsureState(target){
+ target=target||S;var wm18Extras={};Object.keys(target.wrongNotebook||{}).forEach(function(id){var e=target.wrongNotebook[id]||{};wm18Extras[id]={wrongTypes:e.wrongTypes,confusedWith:e.confusedWith,responseTimes:e.responseTimes,hintCount:e.hintCount,answerRevealCount:e.answerRevealCount,lastResponseTimeMs:e.lastResponseTimeMs};});if(typeof wm17EnsureState==='function')wm17EnsureState(target);Object.keys(wm18Extras).forEach(function(id){var e=target.wrongNotebook[id];if(!e)return;var x=wm18Extras[id];if(x.wrongTypes!==undefined)e.wrongTypes=x.wrongTypes;if(x.confusedWith!==undefined)e.confusedWith=x.confusedWith;if(x.responseTimes!==undefined)e.responseTimes=x.responseTimes;if(x.hintCount!==undefined)e.hintCount=x.hintCount;if(x.answerRevealCount!==undefined)e.answerRevealCount=x.answerRevealCount;if(x.lastResponseTimeMs!==undefined)e.lastResponseTimeMs=x.lastResponseTimeMs;});
+ target.reviewQueue=target.reviewQueue&&typeof target.reviewQueue==='object'&&!Array.isArray(target.reviewQueue)?target.reviewQueue:{};
+ target.reviewConfig=target.reviewConfig&&typeof target.reviewConfig==='object'?target.reviewConfig:{};
+ target.reviewConfig.dayEndMax=WM18_LIMITS.dayEnd;target.reviewConfig.startTotalMax=WM18_LIMITS.startTotal;target.reviewConfig.d1Max=WM18_LIMITS.d1;target.reviewConfig.d3Max=WM18_LIMITS.d3;target.reviewConfig.batchSize=WM18_LIMITS.batch;target.reviewConfig.fastMs=WM18_LIMITS.fastMs;target.reviewConfig.slowMs=WM18_LIMITS.slowMs;
+ Object.keys(target.wrongNotebook||{}).forEach(function(id){
+  var e=target.wrongNotebook[id];if(!e)return;e.wrongTypes=wm18TypeMap(e.wrongTypes);e.confusedWith=wm18UniqueStrings(e.confusedWith);e.responseTimes=Array.isArray(e.responseTimes)?e.responseTimes.slice(-80):[];e.hintCount=Math.max(0,+e.hintCount||0);e.answerRevealCount=Math.max(0,+e.answerRevealCount||0);e.lastResponseTimeMs=Math.max(0,+e.lastResponseTimeMs||0);
+  if(!target.reviewQueue[id]){var stage=wm18QueueStageFromLegacy(e),due=e.nextReviewDate||'';if(stage==='D1_DUE'&&(!due||due<=today()))due=wm17DateAdd(today(),1);target.reviewQueue[id]={wordId:+id,stage:stage,dueDate:stage==='STABLE'?'':due,status:stage==='STABLE'?'STABLE':'ACTIVE',originDate:(e.firstWrongAt||today()).slice(0,10),priority:0,retryCount:0,consecutiveSuccess:0,lastResult:'',lastResponseMs:0,reasons:Object.keys(e.wrongTypes||{}),focusSuccessDates:[],updatedAt:e.updatedAt||new Date().toISOString(),scheduleHistory:[]};}
+ });
+ Object.keys(target.reviewQueue).forEach(function(id){var q=target.reviewQueue[id]||{};q.wordId=+id;q.stage=q.stage||'D1_DUE';q.status=q.stage==='STABLE'?'STABLE':(q.status||'ACTIVE');q.dueDate=q.status==='STABLE'?'':(q.dueDate||wm17DateAdd(today(),1));q.reasons=wm18UniqueStrings(q.reasons);q.focusSuccessDates=wm18UniqueStrings(q.focusSuccessDates);q.scheduleHistory=Array.isArray(q.scheduleHistory)?q.scheduleHistory.slice(-60):[];q.updatedAt=q.updatedAt||new Date().toISOString();target.reviewQueue[id]=q;});
+ target.meta=target.meta||{};target.meta.schemaVersion=Math.max(18,+target.meta.schemaVersion||0);target.meta.finalBuild=WM_FINAL_BUILD;target.meta.reviewArchitecture='permanent_db_plus_active_queue';target.meta.reviewRoutine='D0_D1_conditional_D3_D6_focus';return target;
+}
+wm18EnsureState();
+
+function wm18Queue(id){wm18EnsureState();return S.reviewQueue[String(id)]||null;}
+function wm18ActiveQueue(){wm18EnsureState();return Object.keys(S.reviewQueue).map(function(id){return S.reviewQueue[id];}).filter(function(q){return q&&q.status==='ACTIVE'&&q.stage!=='STABLE';});}
+function wm18Permanent(id){wm18EnsureState();return S.wrongNotebook[String(id)]||null;}
+function wm18TouchQueue(id,stage,due,reason,result,responseMs){var q=wm18Queue(id)||{wordId:+id,originDate:today(),reasons:[],focusSuccessDates:[],scheduleHistory:[],retryCount:0,consecutiveSuccess:0};q.stage=stage;q.status=stage==='STABLE'?'STABLE':'ACTIVE';q.dueDate=stage==='STABLE'?'':due;q.reasons=wm18UniqueStrings((q.reasons||[]).concat(reason?[reason]:[]));q.lastResult=result||q.lastResult||'';q.lastResponseMs=Math.max(0,+responseMs||0);q.updatedAt=new Date().toISOString();q.scheduleHistory=Array.isArray(q.scheduleHistory)?q.scheduleHistory:[];q.scheduleHistory.push({at:q.updatedAt,stage:stage,dueDate:q.dueDate,reason:reason||'',result:result||'',responseMs:q.lastResponseMs});if(q.scheduleHistory.length>60)q.scheduleHistory=q.scheduleHistory.slice(-60);S.reviewQueue[String(id)]=q;var e=wm18Permanent(id);if(e){e.status=q.status==='STABLE'?'stabilized':'active';e.nextReviewDate=q.dueDate;e.reviewStage=stage==='D1_DUE'?1:stage==='D3_DUE'?2:stage==='D6_DUE'?3:stage==='STABLE'?4:5;e.updatedAt=q.updatedAt;}return q;}
+function wm18AddType(e,type){if(!e||!type)return;e.wrongTypes=wm18TypeMap(e.wrongTypes);e.wrongTypes[type]=(+e.wrongTypes[type]||0)+1;}
+function wm18AddTelemetry(w,type,selectedId,responseMs,source){var e=wm18Permanent(w[0]);if(!e)return;wm18AddType(e,type||'MEANING');if(selectedId&&+selectedId!==+w[0]){var sw=wm16FindWord(+selectedId);if(sw)e.confusedWith=wm18UniqueStrings((e.confusedWith||[]).concat([sw[3]]));wm18AddType(e,'CONFUSION');}if(responseMs>0){e.lastResponseTimeMs=responseMs;e.responseTimes=Array.isArray(e.responseTimes)?e.responseTimes:[];e.responseTimes.push({at:new Date().toISOString(),ms:responseMs,source:source||'',correct:false});if(e.responseTimes.length>80)e.responseTimes=e.responseTimes.slice(-80);if(responseMs>WM18_LIMITS.slowMs)wm18AddType(e,'SLOW_RECALL');}e.updatedAt=new Date().toISOString();}
+function wm18RecordCorrectTelemetry(w,responseMs,source){var e=wm18Permanent(w[0]);if(!e||!(responseMs>0))return;e.lastResponseTimeMs=responseMs;e.responseTimes=Array.isArray(e.responseTimes)?e.responseTimes:[];e.responseTimes.push({at:new Date().toISOString(),ms:responseMs,source:source||'',correct:true});if(e.responseTimes.length>80)e.responseTimes=e.responseTimes.slice(-80);e.updatedAt=new Date().toISOString();}
+function wm18WrongType(phase,source){var s=String(source||'')+' '+String(phase||'');if(/subjective|typing|spelling/.test(s))return'SPELLING';if(/context/.test(s))return'CONTEXT';if(/root|etym/.test(s))return'ETYMOLOGY';return'MEANING';}
+function wm18ScheduleAfterWrong(w,phase,source,type,responseMs){var q=wm18Queue(w[0]),stage=q&&q.stage||'D1_DUE',scheduled=/pre_day|scheduled_review|D1|D3|D6|focus/.test(String(phase||'')+' '+String(source||''));if(!scheduled||phase==='day_end'||phase==='immediate'||phase==='retry_mc'||phase==='subjective'){return wm18TouchQueue(w[0],'D1_DUE',wm17DateAdd(today(),1),type,'wrong',responseMs);}if(stage==='D1_DUE')return wm18TouchQueue(w[0],'D3_DUE',wm17DateAdd(today(),2),type,'wrong',responseMs);if(stage==='D3_DUE'||stage==='D6_DUE')return wm18TouchQueue(w[0],'FOCUS_CARE',wm17DateAdd(today(),1),type,'wrong',responseMs);q.retryCount=(+q.retryCount||0)+1;return wm18TouchQueue(w[0],'FOCUS_CARE',wm17DateAdd(today(),1),type,'wrong',responseMs);}
+
+var wm18RecordWrongBase=wm17RecordWrong;
+wm17RecordWrong=function(w,dir,day,phase,source){var e=wm18RecordWrongBase(w,dir,day,phase,source),type=WM18_CURRENT_TYPE||wm18WrongType(phase,source),ms=WM18_LAST_RESPONSE_MS||0,sel=WM18_SELECTED_ID||0;wm18AddTelemetry(w,type,sel,ms,source||phase);wm18ScheduleAfterWrong(w,phase,source,type,ms);return e;};
+
+var wm18ReviewSuccessBase=wm17RecordReviewSuccess;
+wm17RecordReviewSuccess=function(w,dir,day,phase){var e=wm18ReviewSuccessBase(w,dir,day,phase),q=wm18Queue(w[0])||{},stage=q.stage||'D1_DUE',ms=WM18_LAST_RESPONSE_MS||0,fast=ms>0&&ms<=S.reviewConfig.fastMs;wm18RecordCorrectTelemetry(w,ms,'scheduled_review');if(phase==='day_end'){wm18TouchQueue(w[0],'D1_DUE',wm17DateAdd(today(),1),'DAY_END_OK','correct',ms);return e;}if(stage==='D1_DUE'){if(fast)wm18TouchQueue(w[0],'D6_DUE',wm17DateAdd(today(),5),'D1_FAST_OK','correct',ms);else wm18TouchQueue(w[0],'D3_DUE',wm17DateAdd(today(),2),'D1_SLOW_OK','correct',ms);}else if(stage==='D3_DUE'){wm18TouchQueue(w[0],'D6_DUE',wm17DateAdd(today(),3),'D3_OK','correct',ms);}else if(stage==='D6_DUE'){if(fast)wm18TouchQueue(w[0],'STABLE','', 'D6_FAST_OK','correct',ms);else wm18TouchQueue(w[0],'FOCUS_CARE',wm17DateAdd(today(),1),'D6_SLOW_OK','correct',ms);}else if(stage==='FOCUS_CARE'){q=wm18Queue(w[0]);q.focusSuccessDates=wm18UniqueStrings((q.focusSuccessDates||[]).concat([today()]));if(q.focusSuccessDates.length>=2)wm18TouchQueue(w[0],'STABLE','', 'FOCUS_2DATES_OK','correct',ms);else wm18TouchQueue(w[0],'FOCUS_CARE',wm17DateAdd(today(),1),'FOCUS_1DATE_OK','correct',ms);}return e;};
+
+function wm18MergePermanent(a,b,merged){a=a||{};b=b||{};merged=merged||{};Object.keys(merged).forEach(function(id){var x=a[id]||{},y=b[id]||{},e=merged[id]||{};var types={},keys=new Set(Object.keys(x.wrongTypes||{}).concat(Object.keys(y.wrongTypes||{})));keys.forEach(function(k){types[k]=Math.max(+((x.wrongTypes||{})[k])||0,+((y.wrongTypes||{})[k])||0);});e.wrongTypes=types;e.confusedWith=wm18UniqueStrings((x.confusedWith||[]).concat(y.confusedWith||[]));var rt=(x.responseTimes||[]).concat(y.responseTimes||[]),seen={};e.responseTimes=rt.filter(function(r){var k=[r.at||'',r.ms||0,r.source||'',r.correct===false?'0':'1'].join('|');if(seen[k])return false;seen[k]=1;return true;}).sort(function(p,q){return new Date(p.at||0)-new Date(q.at||0);}).slice(-80);e.hintCount=Math.max(+x.hintCount||0,+y.hintCount||0);e.answerRevealCount=Math.max(+x.answerRevealCount||0,+y.answerRevealCount||0);e.lastResponseTimeMs=Math.max(+x.lastResponseTimeMs||0,+y.lastResponseTimeMs||0);merged[id]=e;});return merged;}
+function wm18MergeQueue(a,b){a=a||{};b=b||{};var out={};new Set(Object.keys(a).concat(Object.keys(b))).forEach(function(id){var x=a[id],y=b[id];if(!x){out[id]=wmClone(y);return;}if(!y){out[id]=wmClone(x);return;}var newer=new Date(y.updatedAt||0)>new Date(x.updatedAt||0)?y:x,old=newer===x?y:x,h=(x.scheduleHistory||[]).concat(y.scheduleHistory||[]),seen={};out[id]={...wmClone(newer),wordId:+id,reasons:wm18UniqueStrings((x.reasons||[]).concat(y.reasons||[])),focusSuccessDates:wm18UniqueStrings((x.focusSuccessDates||[]).concat(y.focusSuccessDates||[])),retryCount:Math.max(+x.retryCount||0,+y.retryCount||0),consecutiveSuccess:Math.max(+x.consecutiveSuccess||0,+y.consecutiveSuccess||0),scheduleHistory:h.filter(function(r){var k=[r.at||'',r.stage||'',r.dueDate||'',r.result||''].join('|');if(seen[k])return false;seen[k]=1;return true;}).sort(function(p,q){return new Date(p.at||0)-new Date(q.at||0);}).slice(-60)};if(old.status==='STABLE'&&new Date(old.updatedAt||0)>new Date(newer.updatedAt||0))out[id]=wmClone(old);});return out;}
+if(typeof mergeStates==='function'){var wm18MergeStatesBase=mergeStates;mergeStates=function(local,remote){var out=wm18MergeStatesBase(local,remote);out.wrongNotebook=wm18MergePermanent(local&&local.wrongNotebook,remote&&remote.wrongNotebook,out.wrongNotebook||{});out.reviewQueue=wm18MergeQueue(local&&local.reviewQueue,remote&&remote.reviewQueue);wm18EnsureState(out);return out;};}
+if(typeof markSyncChanges==='function'){var wm18MarkSyncBase=markSyncChanges;markSyncChanges=function(prev,next){wm18MarkSyncBase(prev,next);if(!wmDeepEqual(prev&&prev.reviewQueue,next&&next.reviewQueue))next.syncMeta.sections.reviewQueue=Date.now();};}
+
+function wm18Priority(q,e){var overdue=q.dueDate?Math.max(0,wm18DateDiff(q.dueDate,today())):0,stage=q.stage==='D1_DUE'?100:q.stage==='FOCUS_CARE'?95:q.stage==='D6_DUE'?80:q.stage==='D3_DUE'?70:0,types=e&&e.wrongTypes||{},spelling=+types.SPELLING||0,repeat=Math.max(0,(+e.totalWrong||0)-1);return stage+overdue*3+(+e.totalWrong||0)*2+Math.min(8,spelling*2)+Math.min(10,repeat*2);}
+function wm18DueEntries(){wm18EnsureState();return wm18ActiveQueue().filter(function(q){return q.dueDate&&q.dueDate<=today();}).map(function(q){var e=wm18Permanent(q.wordId);q.priority=wm18Priority(q,e);return{q:q,e:e};}).filter(function(x){return x.e;}).sort(function(a,b){if(b.q.priority!==a.q.priority)return b.q.priority-a.q.priority;return new Date(a.q.dueDate||0)-new Date(b.q.dueDate||0);});}
+function wm18HadWrongOnDay(e,day){return !!(e&&Array.isArray(e.reviewLog)&&e.reviewLog.some(function(l){return l.ok===false&&+l.day===+day;}));}
+wm17DayEndCandidates=function(day){wm18EnsureState();var flow=S.dayFlow[day]||{},cutoff=new Date(flow.dayEndReviewAt||0).getTime();return wm17SortRisk(wm17NotebookList().filter(function(e){return wm18HadWrongOnDay(e,day)&&new Date(e.lastWrongAt||0).getTime()>cutoff;})).slice(0,S.reviewConfig.dayEndMax);};
+wm17PreDayCandidates=function(day){wm18EnsureState();if(day<=1&&!allDaysDone())return[];var due=wm18DueEntries(),picked=[],d1=0,d3=0;for(var i=0;i<due.length&&picked.length<S.reviewConfig.startTotalMax;i++){var x=due[i],st=x.q.stage;if(st==='D1_DUE'&&d1>=S.reviewConfig.d1Max)continue;if(st==='D3_DUE'&&d3>=S.reviewConfig.d3Max)continue;if(st==='D1_DUE')d1++;if(st==='D3_DUE')d3++;picked.push(x.e);}return picked;};
+wm17StageLabel=function(e){var q=e&&wm18Queue(e.id);return q?wm18StageLabel(q.stage):'-';};
+wm17ReviewDir=function(e,phase,index){var q=e&&wm18Queue(e.id),types=e&&e.wrongTypes||{};if(phase==='day_end')return e.lastDirection||((index%2)?'ko':'en');if(q&&q.stage==='D1_DUE')return e.lastDirection||((index%2)?'en':'ko');if((+types.SPELLING||0)>0)return'ko';return e.lastDirection==='en'?'ko':e.lastDirection==='ko'?'en':((index%2)?'en':'ko');};
+function wm18ReviewMode(e,phase){var q=wm18Queue(e.id),types=e.wrongTypes||{};if(phase==='day_end'||!q||q.stage==='D1_DUE')return'mc';if((+types.SPELLING||0)>=(+types.MEANING||0)&&(+types.SPELLING||0)>0)return'typing';if((e.confusedWith||[]).length)return'confusion';return'mc';}
+
+wm17StartReviewSession=function(phase,day,entries,after){entries=(entries||[]).map(function(e){return{e:e,w:wm16FindWord(e.id)};}).filter(function(x){return x.w;});if(!entries.length){if(after)after();return;}startDay(day,'wm18_'+phase);SESS={kind:'wm17_review',phase:phase,day:day,qs:entries.map(function(x,i){var q=wm18Queue(x.e.id);return{w:x.w,entry:x.e,queue:q,dir:wm17ReviewDir(x.e,phase,i),mode:wm18ReviewMode(x.e,phase),startedAt:0};}),i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),afterReview:after};$('#pgTitle').textContent=wm17PhaseTitle(phase,day);$('#pgSub').textContent=wm17PhaseSub(phase);renderMC();};
+
+var wm18RenderMCBase=renderMC;
+renderMC=function(){if(SESS&&SESS.kind==='wm17_review'&&SESS.qs[SESS.i]&&SESS.qs[SESS.i].mode==='typing')return wm18RenderReviewTyping();wm18RenderMCBase();if(SESS&&SESS.qs&&SESS.qs[SESS.i]){SESS.qs[SESS.i].startedAt=Date.now();var item=SESS.qs[SESS.i],q=item.queue||wm18Queue(item.w&&item.w[0]);if(SESS.kind==='wm17_review'&&q){var title=document.querySelector('.wm17-review-title');if(title&&!title.querySelector('.wm18-chip'))title.insertAdjacentHTML('beforeend',' <span class="wm18-chip '+wm18StageClass(q.stage)+'">'+wm18StageLabel(q.stage)+'</span>');var strip=document.querySelector('.wm17-routine-strip');if(strip)strip.innerHTML=strip.innerHTML.replace(/D\+3·D\+7/g,'D+3·D+6');}}};
+
+function wm18RenderReviewTyping(){wm15Unbind();var item=SESS.qs[SESS.i],w=item.w,e=item.entry,q=item.queue||wm18Queue(w[0]),batch=Math.floor(SESS.i/S.reviewConfig.batchSize)+1,batches=Math.ceil(SESS.qs.length/S.reviewConfig.batchSize),label=q&&q.stage==='FOCUS_CARE'?'집중 케어 철자 확인':'철자 취약 맞춤 확인';item.startedAt=Date.now();stage('vQuiz','<div class="wm18-review-input"><div class="wm17-review-head"><div><div class="wm17-review-title">'+wm15Esc(wm17PhaseTitle(SESS.phase,SESS.day))+' <span class="wm18-chip '+wm18StageClass(q&&q.stage)+'">'+wm18StageLabel(q&&q.stage)+'</span></div><div class="wm17-review-sub">'+label+'</div></div><div class="wm17-mini-batch">미니세트 '+batch+'/'+batches+' · '+(SESS.i+1)+'/'+SESS.qs.length+'</div></div><div class="wm18-type-note"><b>철자 오답 이력</b>이 있어 선택형 대신 직접 회상합니다. 틀리면 기존의 천천히 확인·나타내기 과정으로 연결됩니다.</div><div class="card" style="text-align:center"><div class="q-sub">이 뜻을 가진 영어 단어를 입력하세요.</div><div class="q-word" style="font-size:30px">'+wm15Esc(w[4])+'</div><input class="sa-input" id="wm18ReviewInput" placeholder="영어 단어 입력" autocomplete="off" autocapitalize="none" spellcheck="false"><div class="sa-feedback" id="wm18ReviewFb"></div><button type="button" class="btn btn-hero one-entry-btn" id="wm18ReviewSubmit">확인</button></div></div>');var inp=$('#wm18ReviewInput'),btn=$('#wm18ReviewSubmit');inp.focus();btn.addEventListener('click',wm18SubmitReviewTyping);inp.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();wm18SubmitReviewTyping();}});}
+function wm18SubmitReviewTyping(){var inp=$('#wm18ReviewInput');if(!inp||inp.dataset.lock)return;var item=SESS.qs[SESS.i],w=item.w,val=inp.value.trim(),ms=Math.max(1,Date.now()-(item.startedAt||Date.now()));if(!val){toast('답을 입력하세요');return;}var ok=val.toLowerCase().replace(/\s+/g,'')===w[3].toLowerCase().replace(/\s+/g,'');WM18_LAST_RESPONSE_MS=ms;WM18_SELECTED_ID=0;WM18_CURRENT_TYPE='SPELLING';WM18_CURRENT_SOURCE='scheduled_review_typing';recordDayMetric(SESS.day,w,ok,'subjective');if(ok){inp.dataset.lock='1';inp.disabled=true;SESS.correct++;wm17RecordReviewSuccess(w,'ko',SESS.day,SESS.phase);$('#wm18ReviewFb').style.color='var(--green)';$('#wm18ReviewFb').textContent='✓ 정확합니다';save();setTimeout(nextQ,430);return;}S.wrong[w[0]]=(+S.wrong[w[0]]||0)+1;S.mastered[w[0]]=0;S.wrongHistory=S.wrongHistory||{};S.wrongHistory[w[0]]=(+S.wrongHistory[w[0]]||0)+1;wm17RecordWrong(w,'ko',SESS.day,SESS.phase,'scheduled_review_typing');save();WM_V15_INLINE={w:w,dir:'ko',parentIndex:SESS.i,day:SESS.day,typingDirs:['ko','en'],typingIndex:0,typingCorrect:0,selected:null,memoryContext:'scheduled_review',focusCare:(wm18Queue(w[0])||{}).stage==='FOCUS_CARE'};setTimeout(wm15RenderInitialReveal,250);}
+
+var wm18GradeBase=gradeAnswer;
+gradeAnswer=function(w,ok,btn){var item=SESS&&SESS.qs&&SESS.qs[SESS.i],ms=item&&item.startedAt?Math.max(1,Date.now()-item.startedAt):0;WM18_LAST_RESPONSE_MS=ms;WM18_SELECTED_ID=btn&&btn.dataset?+btn.dataset.id||0:0;WM18_CURRENT_TYPE='MEANING';WM18_CURRENT_SOURCE=SESS&&SESS.kind==='main'?'main_choice':'choice';wm18GradeBase(w,ok,btn);if(ok){wm18RecordCorrectTelemetry(w,ms,WM18_CURRENT_SOURCE);save();}};
+var wm18PickMCBase=pickMC;
+pickMC=function(btn,w){if(SESS&&SESS.kind==='wm17_review'){var item=SESS.qs[SESS.i];WM18_LAST_RESPONSE_MS=item&&item.startedAt?Math.max(1,Date.now()-item.startedAt):0;WM18_SELECTED_ID=btn&&btn.dataset?+btn.dataset.id||0:0;WM18_CURRENT_TYPE='MEANING';WM18_CURRENT_SOURCE='scheduled_review';}var result=wm18PickMCBase(btn,w);if(SESS&&SESS.kind==='wm17_review'&&WM_V15_INLINE){WM_V15_INLINE.focusCare=(wm18Queue(w[0])||{}).stage==='FOCUS_CARE';}return result;};
+
+var wm18RetryRenderBase=wm15RenderRetryMC;
+wm15RenderRetryMC=function(){wm18RetryRenderBase();if(WM_V15_INLINE)WM_V15_INLINE.retryStartedAt=Date.now();};
+var wm18RetryPickBase=wm15PickRetry;
+wm15PickRetry=function(btn){var x=WM_V15_INLINE;WM18_LAST_RESPONSE_MS=x&&x.retryStartedAt?Math.max(1,Date.now()-x.retryStartedAt):0;WM18_SELECTED_ID=btn&&btn.dataset?+btn.dataset.id||0:0;WM18_CURRENT_TYPE='MEANING';WM18_CURRENT_SOURCE='retry_mc';return wm18RetryPickBase(btn);};
+var wm18TypingInputBase=wm15RenderTypingInput;
+wm15RenderTypingInput=function(){wm18TypingInputBase();if(WM_V15_INLINE)WM_V15_INLINE.typingStartedAt=Date.now();};
+var wm18TypingSubmitBase=wm15SubmitTyping;
+wm15SubmitTyping=function(){var x=WM_V15_INLINE;WM18_LAST_RESPONSE_MS=x&&x.typingStartedAt?Math.max(1,Date.now()-x.typingStartedAt):0;WM18_SELECTED_ID=0;WM18_CURRENT_TYPE='SPELLING';WM18_CURRENT_SOURCE='subjective';return wm18TypingSubmitBase();};
+
+var wm18RevealBase=wm15RenderInitialReveal;
+wm15RenderInitialReveal=function(){var x=WM_V15_INLINE,w=x&&x.w;if(w){var e=wm18Permanent(w[0]);if(e){e.answerRevealCount=(+e.answerRevealCount||0)+1;e.updatedAt=new Date().toISOString();save();}}if(x&&x.focusCare&&!x.focusIntroDone){x.focusIntroDone=true;var selected=x.selected,confused=selected?(x.dir==='en'?selected[4]:selected[3]):((wm18Permanent(w[0])||{}).confusedWith||[])[0]||'다른 보기';stage('vQuiz','<div class="wm18-focus-card"><div class="wm18-focus-title">집중 케어 · 반복 대신 구분하기</div><div class="mini">같은 방식으로 계속 풀지 않습니다. 방금 혼동한 항목과 정답을 먼저 분리해 기억합니다.</div><div class="wm18-focus-grid"><div><div class="k">정답 단어</div><div class="v">'+wm15Esc(w[3])+'</div><div class="mini" style="margin-top:5px">'+wm15Esc(w[4])+'</div></div><div><div class="k">혼동한 보기</div><div class="v">'+wm15Esc(confused)+'</div><div class="mini" style="margin-top:5px">두 항목을 같은 것으로 처리하지 않도록 구분합니다.</div></div></div><button type="button" class="btn btn-hero one-entry-btn" id="wm18FocusNext">정답을 천천히 다시 확인</button></div>');$('#wm18FocusNext').addEventListener('click',function(){wm18RevealBase();},{once:true});return;}return wm18RevealBase();};
+var wm18TypingRevealBase=wm15RenderTypingReveal;
+wm15RenderTypingReveal=function(){var x=WM_V15_INLINE,w=x&&x.w;if(w){var e=wm18Permanent(w[0]);if(e){e.answerRevealCount=(+e.answerRevealCount||0)+1;e.updatedAt=new Date().toISOString();save();}}return wm18TypingRevealBase();};
+
+function wm18StartPostCourseReview(){var list=wm17PreDayCandidates(DAYS);if(!list.length){toast('오늘 도래한 기억 확인이 없습니다');return;}wm17StartReviewSession('pre_day',DAYS,list,function(){save();go('Home');});}
+
+var wm18HomeBase=renderHomeLearner;
+renderHomeLearner=function(){wm18HomeBase();wm18EnsureState();var hero=document.querySelector('#vHome .single-entry-hero'),due=wm17PreDayCandidates(currentDay()).length,active=wm18ActiveQueue().length,focus=wm18ActiveQueue().filter(function(q){return q.stage==='FOCUS_CARE';}).length,ever=wm17NotebookList().length;if(hero){var old=hero.querySelector('.wm17-routine-strip');if(old)old.remove();var box=document.createElement('div');box.className='wm17-routine-strip';box.innerHTML='<span class="wm17-phase '+(due?'warn':'')+'">오늘 복습 '+due+'</span><span class="wm17-phase">영구 오답 '+ever+'</span><span class="wm17-phase">활성 큐 '+active+'</span>'+(focus?'<span class="wm17-phase warn">집중 케어 '+focus+'</span>':'');var btn=hero.querySelector('.one-entry-btn');if(btn)hero.insertBefore(box,btn);else hero.appendChild(box);if(allDaysDone()&&btn){btn.removeAttribute('onclick');if(due){btn.disabled=false;btn.textContent='▶ 과정 후 기억 확인 '+due+'개';btn.onclick=wm18StartPostCourseReview;}else{btn.disabled=true;btn.textContent='18DAY 과정 완료 · 오늘 복습 없음';}}}var badge=document.querySelector('#vHome .v15-build');if(badge)badge.textContent='FINAL v18';if(hero&&!hero.querySelector('.wm18-build')){var mk=document.createElement('div');mk.className='wm18-build mini';mk.style.marginTop='10px';mk.textContent='FINAL v18 · '+WM_FINAL_BUILD;hero.appendChild(mk);}};
+
+wm17DownloadWrongNotebook=function(){var rows=[['ID','단어','뜻','최초오답','최근오답','누적오답','영한오답','한영오답','오답유형','혼동보기','복습단계','복습상태','다음복습일','최근반응ms','정답공개횟수']];wm17SortRisk(wm17NotebookList()).forEach(function(e){var q=wm18Queue(e.id);rows.push([e.id,e.word,e.meaning,e.firstWrongAt||'',e.lastWrongAt||'',e.totalWrong||0,(e.directions||{}).en||0,(e.directions||{}).ko||0,Object.keys(e.wrongTypes||{}).filter(function(k){return e.wrongTypes[k]>0;}).join('/'),(e.confusedWith||[]).join('/'),q?wm18StageLabel(q.stage):'-',q?q.status:'-',q?q.dueDate:'',e.lastResponseTimeMs||0,e.answerRevealCount||0]);});dl('워드마스터_영구오답DB_활성복습큐_'+today()+'.csv','\uFEFF'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n'),'text/csv;charset=utf-8');};
+
+var wm18AdminBase=renderAdmin;
+renderAdmin=function(){wm18AdminBase();wm18EnsureState();var active=wm18ActiveQueue(),due=wm18DueEntries(),focus=active.filter(function(q){return q.stage==='FOCUS_CARE';}),d1=active.filter(function(q){return q.stage==='D1_DUE';}),d3=active.filter(function(q){return q.stage==='D3_DUE';}),d6=active.filter(function(q){return q.stage==='D6_DUE';}),v=$('#vAdmin');if(!v)return;var box=document.createElement('div');box.className='tbl-wrap';box.innerHTML='<div class="tbl-head"><div><div style="font-family:var(--disp);font-weight:700;font-size:17px">활성 복습 큐 · FINAL v18</div><div class="mini">영구 오답 DB와 실제 출제 일정을 분리했습니다. 상한 초과 항목은 삭제하지 않고 다음 접속으로 이월합니다.</div></div></div><div class="wm18-queue-grid"><div><div class="k">오늘 도래</div><div class="v" style="color:var(--cyan)">'+due.length+'</div></div><div><div class="k">D+1 / D+3</div><div class="v">'+d1.length+' / '+d3.length+'</div></div><div><div class="k">D+6</div><div class="v" style="color:var(--iris2)">'+d6.length+'</div></div><div><div class="k">집중 케어</div><div class="v" style="color:var(--pink)">'+focus.length+'</div></div></div><div style="padding:0 20px 18px" class="mini">시작 전 총복습 최대 '+S.reviewConfig.startTotalMax+'개 · D+1 최대 '+S.reviewConfig.d1Max+'개 · 조건부 D+3 최대 '+S.reviewConfig.d3Max+'개 · DAY 마감 최대 '+S.reviewConfig.dayEndMax+'개</div>';v.appendChild(box);var all=v.querySelectorAll('*');all.forEach(function(n){if(n.childNodes.length===1&&n.firstChild&&n.firstChild.nodeType===3)n.textContent=n.textContent.replace(/D\+3·D\+7/g,'D+3·D+6').replace(/FINAL v17/g,'FINAL v18');});};
+
+var wm18ConfigBase=renderConfig;
+renderConfig=function(){wm18ConfigBase();var v=$('#vConfig');if(!v)return;var nodes=v.querySelectorAll('*');nodes.forEach(function(n){if(n.childNodes.length===1&&n.firstChild&&n.firstChild.nodeType===3)n.textContent=n.textContent.replace(/D\+3·D\+7/g,'D+3·D+6').replace(/D\+7/g,'D+6').replace(/FINAL v17/g,'FINAL v18');});var c=document.createElement('div');c.className='card';c.style.marginTop='18px';c.innerHTML='<div style="font-family:var(--disp);font-weight:700;font-size:18px">적응형 오답 알고리즘 · FINAL v18</div><div class="mini" style="margin:6px 0 13px;line-height:1.75">즉시 꾹꾹 교정은 유지하고, 이후 복습은 반응시간과 취약 유형에 따라 D+1 → 조건부 D+3 → D+6으로 분산합니다. 반복 오답은 더 많이 반복하지 않고 집중 케어로 설명 방식을 바꿉니다.</div><div class="wm17-routine-strip" style="justify-content:flex-start"><span class="wm17-phase on">D0 즉시 교정</span><span class="wm17-phase">D+1 최대 '+S.reviewConfig.d1Max+'</span><span class="wm17-phase">조건부 D+3 최대 '+S.reviewConfig.d3Max+'</span><span class="wm17-phase">D+6 안정화</span><span class="wm17-phase warn">집중 케어</span></div><div class="wm17-note"><b>완료 원칙</b><br>메일 발송 실패는 DAY 진도를 되돌리지 않습니다. 진도는 먼저 저장하고 보고서는 대기열에서 재전송합니다.</div>';v.appendChild(c);};
+
+if(typeof cloudPanelHtml==='function'){var wm18CloudBase=cloudPanelHtml;cloudPanelHtml=function(){return wm18CloudBase().replace(/FINAL v1[4567]/g,'FINAL v18').replace(/2026-07-26-v1[4567]/g,WM_FINAL_BUILD);};}
+if(typeof wmContinuityBannerHtml==='function'){var wm18BannerBase=wmContinuityBannerHtml;wmContinuityBannerHtml=function(){return wm18BannerBase().replace(/FINAL v1[4567]/g,'FINAL v18').replace(/2026-07-26-v1[4567]/g,WM_FINAL_BUILD);};}
+TITLES.Home[1]='복습과 신규 학습을 한 번에';TITLES.Quiz[1]='오답 유형과 반응속도에 맞춘 반복';
+S.meta.schemaVersion=18;S.meta.finalBuild=WM_FINAL_BUILD;wm18EnsureState();save();wmWriteLocalBackup(true);document.title='WORD MASTER 수능 2000 · 적응형 오답 루틴 FINAL v18';
 </script>
 
 </body>
