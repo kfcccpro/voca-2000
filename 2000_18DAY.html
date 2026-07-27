@@ -424,7 +424,7 @@ let ROLE=null; // 'learner' | 'admin'
 // 저장 키는 구버전과 동일하게 유지한다. 키를 바꾸면 기존 누적 학습·오답 데이터가 끊어진다.
 const KEY='wm2000_v3';
 const SNAPSHOT_KEY='wm2000_v3_snapshot';
-const APP_DATA_VERSION=7;
+const APP_DATA_VERSION=8;
 const APP_TITLE='2000_18DAY';
 const WRONG_PRIMARY_HOLD_MS=3000;
 const COGNITION_REVEAL_MS=4000;
@@ -435,7 +435,7 @@ const defState=()=>({
  quizStat:{done:0,correct:0},
  history:[],daily:{},dayLog:{},
  sessions:[],   // 로그인/시험 세션 기록 {login, logout, dur, day, type, correct, total}
- config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},pendingReports:[],
+ config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},
  wrongDetail:{},
  wrongMeta:{},   // id -> 누적 오답 횟수·복습 일정·정복 이력
  wrongHistory:[],// 최근 오답 발생/재시험 정답/정복 이벤트 감사 로그
@@ -447,18 +447,7 @@ function obj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
 function parseStore(key){try{const raw=localStorage.getItem(key);if(!raw)return null;const o=JSON.parse(raw);return obj(o)?o:null;}catch(e){return null;}}
 function validWordId(id){const n=+id;return Number.isInteger(n)&&!!byId[n];}
 function cleanWordMap(map,mode='number'){const out={};if(!obj(map))return out;Object.keys(map).forEach(id=>{if(!validWordId(id))return;const v=map[id];if(mode==='boolean'){if(!!v)out[+id]=true;}else{const n=Math.max(0,Number(v)||0);if(n>0)out[+id]=n;}});return out;}
-function normalizeCompletionPayload(value){if(!obj(value))return null;const day=Math.max(1,Math.min(DAYS,+value.day||1));
- const src=obj(value.main)?value.main:null;if(!src)return null;
- // 저장본이 불완전해도 보고서 생성이 실패하지 않도록 필수 필드를 보정한다
- const main={...src,total:Math.max(0,+src.total||0),correct:Math.max(0,+src.correct||0),
-  pct:Math.max(0,Math.min(100,+src.pct||0)),wrongThis:Array.isArray(src.wrongThis)?src.wrongThis:[]};
- let retry=obj(value.retry)?value.retry:null;
- if(retry)retry={...retry,total:Math.max(0,+retry.total||0),correct:Math.max(0,+retry.correct||0),
-  pct:Math.max(0,Math.min(100,+retry.pct||0)),wrongThis:Array.isArray(retry.wrongThis)?retry.wrongThis:[]};
- const status=['ready','sending','error','sent','queued'].includes(value.status)?value.status:'ready';
- return{day,main,retry,status:status==='sending'?'ready':status,
-  createdAt:value.createdAt||new Date().toISOString(),sentAt:value.sentAt||null,
-  failCount:Math.max(0,+value.failCount||0),error:typeof value.error==='string'?value.error:''};}
+function normalizeCompletionPayload(value){if(!obj(value))return null;const day=Math.max(1,Math.min(DAYS,+value.day||1));const main=obj(value.main)?value.main:null;if(!main)return null;const status=['ready','sending','error','sent'].includes(value.status)?value.status:'ready';return{day,main,retry:obj(value.retry)?value.retry:null,status:status==='sending'?'ready':status,createdAt:value.createdAt||new Date().toISOString(),sentAt:value.sentAt||null,error:typeof value.error==='string'?value.error:''};}
 function normalizeState(raw){const d=defState(),o=obj(raw)?raw:{};const n={...d,...o};
  n.config={...d.config,...(obj(o.config)?o.config:{})};
  n.seen=cleanWordMap(o.seen,'boolean');n.fav=cleanWordMap(o.fav,'boolean');n.mastered=cleanWordMap(o.mastered);n.wrong=cleanWordMap(o.wrong);
@@ -543,11 +532,9 @@ function meaningVariants(mean){
  // "발달[발전]하다" → 발달하다, 발전하다
  const expandBracket=s=>{const m=s.match(/(.*)\[(.+?)\](.*)/);if(!m)return [s];
   const base=m[1],alt=m[2],tail=m[3];
-  // 대괄호는 "바로 앞 어절"을 대체한다.
-  // "발달[발전]하다" -> 발달하다 / 발전하다
-  // "영향을 미치는 것[사람]" -> 영향을 미치는 것 / 영향을 미치는 사람
+  // 대괄호는 바로 앞 어절을 대체한다: 발달[발전]하다 → 발달하다 / 발전하다
   const sp=base.lastIndexOf(' '),head=sp>=0?base.slice(0,sp+1):'';
-  return [base+tail, head+alt+tail].map(x=>x.trim());};
+  return [base+tail,head+alt+tail].map(x=>x.trim());};
  mean.split(/[,;/]/).forEach(part=>{part=part.trim();if(!part)return;
   // (~) 제거, ~ 제거
   part=part.replace(/\([^)]*\)/g,'').replace(/[~\.]/g,'').trim();
@@ -571,17 +558,18 @@ function checkAnswer(userInput,meanStr){
  let best=0;
  for(const v of variants){const nv=normKo(v);if(!nv)continue;
   if(u===nv){best=1;break;}
-  // 부분일치는 "뜻 항목 하나를 사실상 다 쓴 경우"만 인정 (길이비 50% 이상)
+  // 짧은 두 글자 조각만으로 정답 처리하지 않는다. 뜻 항목의 절반 이상을 쓴 경우에만 포함 일치를 인정한다.
   const shorter=Math.min(u.length,nv.length),longer=Math.max(u.length,nv.length);
-  if((nv.includes(u)||u.includes(nv))&&shorter>=2&&shorter/longer>=0.5){best=1;break;}
+  const contains=nv.includes(u)||u.includes(nv);
+  if(contains&&shorter>=2&&shorter/longer>=0.5){best=1;break;}
   best=Math.max(best,simRatio(u,nv));
  }
  return {ok:best>=th,score:Math.round(best*100)};
 }
-/* 뜻이 같은 단어들을 묶어 한→영 주관식에서 함께 정답 처리 */
-const SYNONYM_GROUPS=(()=>{const m={};WORDS.forEach(w=>{const k=(w[4]||'').trim();(m[k]=m[k]||[]).push(w[3]);});
- const out={};Object.keys(m).forEach(k=>{if(m[k].length>1)m[k].forEach(en=>out[en.toLowerCase()]=m[k].map(x=>x.toLowerCase()));});return out;})();
-function acceptedSpellings(word){const k=(word||'').toLowerCase();return SYNONYM_GROUPS[k]||[k];}
+/* 같은 뜻 문자열을 가진 영단어는 한→영 주관식에서 함께 정답으로 인정한다. */
+const SYNONYM_GROUPS=(()=>{const grouped={};WORDS.forEach(w=>{const key=(w[4]||'').trim();(grouped[key]=grouped[key]||[]).push(w[3]);});
+ const out={};Object.keys(grouped).forEach(key=>{if(grouped[key].length>1)grouped[key].forEach(en=>out[en.toLowerCase()]=grouped[key].map(x=>x.toLowerCase()));});return out;})();
+function acceptedSpellings(word){const key=(word||'').toLowerCase();return SYNONYM_GROUPS[key]||[key];}
 
 /* ===== FX ===== */
 function confetti(x,y,n=90){const L=$('#fxLayer');const cols=['#6C5CE7','#00E5D4','#A6FF3D','#FF5DA2','#FFB443','#2BE38A'];
@@ -609,9 +597,6 @@ function tryLogin(){
 }
 function logout(){ROLE=null;pinBuf='';updatePinDots();$('#shell').classList.add('hidden');$('#loginScreen').style.display='grid';}
 function enterApp(){startSession();$('#loginScreen').style.display='none';$('#shell').classList.remove('hidden');
- // 보류된 보고서가 있으면 자동 재전송하고, 온라인 복귀 시에도 재시도한다
- try{retryPendingReports();if(!window.__mailRetryBound){window.__mailRetryBound=true;window.addEventListener('online',()=>retryPendingReports());}}catch(_e){}
-
  buildSidebar();buildTopbar();go('Home');if(ROLE==='learner'&&S.pendingCompletion)setTimeout(restorePendingCompletionGate,80);}
 
 /* ===== SIDEBAR (역할별) ===== */
@@ -796,14 +781,14 @@ function showScheduledCognition(w,onDone){clearTimeout(wrongRevealTimer);const o
 function showWrongReveal(w,dir,onDone){clearTimeout(wrongRevealTimer);if(SESS)SESS.blocked=true;unbindKeys();const scheduled=SESS&&SESS.phase==='scheduled';wrongRevealTimer=setTimeout(()=>{if(scheduled)showScheduledCognition(w,onDone);else{clearWrongReveal();onDone();}},WRONG_PRIMARY_HOLD_MS);}
 function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
  // dir 'en' => 영단어 보고 뜻 선택 / 'ko' => 뜻 보고 단어 선택
- // 보기에 표시될 텍스트가 정답과 완전히 같은 단어는 오답 보기에서 제외
  const face=x=>dir==='en'?x[4]:x[3];
- const seenFace=new Set([face(w)]),distract=[];
+ const correctFace=face(w),seenFace=new Set([correctFace]);
+ const distract=[];
  for(const x of shuffle(WORDS)){
   if(distract.length>=3)break;
   if(x[0]===w[0])continue;
-  const f=face(x);if(seenFace.has(f))continue;
-  seenFace.add(f);distract.push(x);
+  const shown=face(x);if(seenFace.has(shown))continue;
+  seenFace.add(shown);distract.push(x);
  }
  const opts=shuffle([w,...distract]);
  const q=dir==='en'?w[3]:w[4];const label=dir==='en'?'이 단어의 뜻은?':'이 뜻을 가진 단어는?';
@@ -813,14 +798,14 @@ function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
    <div class="progline"><i style="width:${i/qs.length*100}%"></i></div>
    <div class="card" style="margin-top:18px"><div class="q-sub">${label} <span style="color:${dir==='en'?'var(--iris2)':'var(--cyan)'}">[${dir==='en'?'영→한':'한→영'}]</span></div>
      <div class="q-word">${q}</div>
-     <div class="opts" id="opts">${opts.map((o,k)=>`<button class="opt" data-id="${o[0]}" data-face="${(dir==='en'?o[4]:o[3]).replace(/"/g,'&quot;')}">${dir==='en'?o[4]:o[3]}<span class="kbd">${k+1}</span></button>`).join('')}</div></div>
+     <div class="opts" id="opts">${opts.map((o,k)=>{const shown=dir==='en'?o[4]:o[3];return `<button class="opt" data-id="${o[0]}" data-face="${String(shown).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${shown}<span class="kbd">${k+1}</span></button>`;}).join('')}</div></div>
  </div>`);
  $('#opts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickMC(b,w));bindKeys();
 }
 function pickMC(btn,w){const opts=$('#opts');if(opts.dataset.lock||SESS.blocked)return;opts.dataset.lock=1;
  const dir=SESS.qs[SESS.i].dir;
- // ID가 달라도 표시 텍스트가 정답과 같으면 정답 인정 (억울한 오답 방지)
- const ok=(+btn.dataset.id===w[0])||(btn.dataset.face||'')===((dir==='en'?w[4]:w[3])||'');
+ const answerFace=dir==='en'?w[4]:w[3];
+ const ok=(+btn.dataset.id===w[0])||String(btn.dataset.face||'')===String(answerFace||'');
  opts.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(+b.dataset.id===w[0])b.classList.add(ok?'correct':'answer-correct-red');else if(b===btn)b.classList.add('wrong');});
  gradeAnswer(w,ok,btn);if(ok)setTimeout(nextQ,650);else{const card=opts.closest('.card');if(card){const note=el('div','wrong-hold-note',SESS.phase==='scheduled'?'붉은 정답을 3초 확인한 뒤 한글 뜻 인지 화면으로 이동합니다.':'붉은 정답을 3초 확인합니다. 당일 DAY에는 추가 인지 단계가 없습니다.');card.appendChild(note);}showWrongReveal(w,dir,nextQ);}
 }
@@ -847,11 +832,11 @@ function submitSA(){const inp=$('#saInput');if(!inp||inp.dataset.done)return nex
  inp.dataset.done=1;inp.disabled=true;
  let ok,score,correctAns;
  if(dir==='en'){const r=checkAnswer(val,w[4]);ok=r.ok;score=r.score;correctAns=w[4];}
- else{ // 한→영: 영어 스펠링 유사도 (뜻이 같은 동의어도 정답 인정)
+ else{ // 한→영: 영어 스펠링 유사도 + 동일 뜻 동의어 인정
   const u=val.toLowerCase().replace(/\s/g,'');
-  const cands=acceptedSpellings(w[3]).map(x=>x.replace(/\s/g,''));
-  score=Math.max(...cands.map(t=>Math.round(simRatio(u,t)*100)));
-  ok=cands.includes(u)||score>=(S.config.saThreshold||80);
+  const candidates=acceptedSpellings(w[3]).map(x=>x.replace(/\s/g,''));
+  score=Math.max(...candidates.map(t=>Math.round(simRatio(u,t)*100)));
+  ok=candidates.includes(u)||score>=(S.config.saThreshold||80);
   const others=acceptedSpellings(w[3]).filter(x=>x!==w[3].toLowerCase());
   correctAns=others.length?`${w[3]} (동의어 인정: ${others.join(', ')})`:w[3];}
  const fb=$('#saFb');fb.style.color=ok?'var(--green)':'var(--red)';
@@ -891,9 +876,7 @@ function renderSimpleResult(result){const em=result.pct>=90?'🏆':result.pct>=7
 function isDayLearningComplete(day){const dp=dayProgress(day);return dp.total>0&&dp.seen>=dp.total;}
 let pendingCompletion=S.pendingCompletion||null;
 function renderDayFinal(main,retry){const remaining=retry?retry.wrongThis.length:0;const retryText=retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음';stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">DAY ${main.day} 학습 종료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="mail-note"><b>관리자 보고 전송이 완료되어야 DAY가 최종 완료됩니다.</b></div></div>`);showCompletionGate({day:main.day,main,retry,status:'ready',createdAt:new Date().toISOString()},{autoSend:true});}
-function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;
- p={...p,main:{total:0,correct:0,pct:0,wrongThis:[],...(p.main||{})}};
- if(!Array.isArray(p.main.wrongThis))p.main.wrongThis=[];return `[2000_18DAY · DAY ${p.day} 종료 보고]
+function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;return `[2000_18DAY · DAY ${p.day} 종료 보고]
 보고 시각: ${new Date().toLocaleString('ko-KR')}
 학습 진도: ${dp.seen}/${dp.total} (${Math.round(dp.seen/dp.total*100)}%)
 본 시험: ${p.main.correct}/${p.main.total} (${p.main.pct}%)
@@ -908,56 +891,10 @@ DAY 누적 오답 발생: ${dayCumulativeWrongCount(p.day)}회
 누적 진도: ${seenCount()}/${TOTAL}
 누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`;}
 function completionPayload(p){const pct=Math.round(seenCount()/TOTAL*100),tot=S.quizStat.done,accur=tot?Math.round(S.quizStat.correct/tot*100):0,L=levelInfo(),text=completionReportText(p);return{report_id:`wm2000-day${p.day}-${p.createdAt||new Date().toISOString()}`,email:ADMIN_EMAIL,to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:text,day:p.day,day_report:text,report_text:text,message:text,summary:{words:p.main.total,accuracy:p.main.pct,wrong:p.main.wrongThis.length,active_wrong:wrongList().length,cumulative_wrong:cumulativeWrongCount()}};}
-function showCompletionGate(payload,options={}){if(!payload||!isDayLearningComplete(payload.day)){toast('DAY 전체 단어 학습 후 관리자 보고를 전송할 수 있습니다.');return;}const existing=document.querySelector('.completion-gate');if(existing)existing.remove();pendingCompletion=normalizeCompletionPayload(payload)||normalizeCompletionPayload({...payload,main:obj(payload.main)?payload.main:{total:0,correct:0,pct:0,wrongThis:[]}});S.pendingCompletion=pendingCompletion;save();const retry=pendingCompletion.retry,status=pendingCompletion.status||'ready';const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom" role="dialog" aria-modal="true"><div class="completion-gate-title">DAY ${pendingCompletion.day} 종료 보고</div><div class="completion-required">관리자 보고서 이메일 전송 필수</div><div class="completion-incomplete">${status==='sent'?'전송 확인 완료':'현재 DAY는 아직 미완료입니다'}</div><div class="completion-lock">전송 성공 전에는 다음 DAY 이동과 완료 확정이 잠깁니다.<br>${ADMIN_EMAIL}</div><div class="completion-summary"><div><span class="mini">본 시험</span><b>${pendingCompletion.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(pendingCompletion.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div><div class="mail-status ${status==='sent'?'ok':status==='error'?'err':''}" id="completionMailStatus">${status==='sent'?`전송 완료: ${ADMIN_EMAIL}`:status==='error'?(pendingCompletion.error||'전송에 실패했습니다. 다시 시도하세요.'):'관리자 보고서 전송을 준비했습니다.'}</div><button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()" ${status==='sent'?'style="display:none"':''}>📧 관리자에게 전송하고 DAY 완료</button><button class="btn btn-lime wfull" style="margin-top:10px;${status==='sent'?'display:inline-flex':'display:none'}" id="completionDoneBtn" onclick="closeCompletionGate()">전송 확인 완료 · 홈으로</button><div id="completionFallback" class="completion-fallback" style="display:none"><div class="mini" style="margin-bottom:10px;line-height:1.6">전송이 두 번 이상 실패했습니다. 오늘 학습 기록은 이미 안전하게 저장되어 있습니다.<br><b style="color:var(--amber)">아래 완료 기능은 선생님(관리자)용입니다. 학생 혼자 DAY를 완료할 수는 없습니다.</b></div><button class="btn btn-ghost wfull" type="button" onclick="openMailAppFallback()">메일 앱으로 보고서 보내기</button><button class="btn btn-ghost wfull" type="button" style="margin-top:8px" onclick="requestOfflineCompletion()">🔒 관리자 승인 후 오프라인 완료 · 연결되면 자동 재전송</button><div id="offlinePinBox" style="display:none;margin-top:10px"><input type="password" inputmode="numeric" maxlength="4" id="offlinePinInput" class="num-input" style="width:100%;text-align:center;letter-spacing:8px;font-size:22px" placeholder="관리자 PIN" aria-label="관리자 PIN 4자리"><div id="offlinePinError" class="mini" style="color:var(--red);min-height:20px;margin-top:6px"></div><button class="btn btn-hero wfull" type="button" onclick="confirmOfflineCompletion()">승인하고 DAY 완료</button></div></div></div>`);document.body.appendChild(gate);updateCompletionFallback();if(options.autoSend&&status!=='sent')setTimeout(sendCompletionMail,350);}
+function showCompletionGate(payload,options={}){if(!payload||!isDayLearningComplete(payload.day)){toast('DAY 전체 단어 학습 후 관리자 보고를 전송할 수 있습니다.');return;}const existing=document.querySelector('.completion-gate');if(existing)existing.remove();pendingCompletion=normalizeCompletionPayload(payload)||payload;S.pendingCompletion=pendingCompletion;save();const retry=pendingCompletion.retry,status=pendingCompletion.status||'ready';const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom" role="dialog" aria-modal="true"><div class="completion-gate-title">DAY ${pendingCompletion.day} 종료 보고</div><div class="completion-required">관리자 보고서 이메일 전송 필수</div><div class="completion-incomplete">${status==='sent'?'전송 확인 완료':'현재 DAY는 아직 미완료입니다'}</div><div class="completion-lock">전송 성공 전에는 다음 DAY 이동과 완료 확정이 잠깁니다.<br>${ADMIN_EMAIL}</div><div class="completion-summary"><div><span class="mini">본 시험</span><b>${pendingCompletion.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(pendingCompletion.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div><div class="mail-status ${status==='sent'?'ok':status==='error'?'err':''}" id="completionMailStatus">${status==='sent'?`전송 완료: ${ADMIN_EMAIL}`:status==='error'?(pendingCompletion.error||'전송에 실패했습니다. 다시 시도하세요.'):'관리자 보고서 전송을 준비했습니다.'}</div><button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()" ${status==='sent'?'style="display:none"':''}>📧 관리자에게 전송하고 DAY 완료</button><button class="btn btn-lime wfull" style="margin-top:10px;${status==='sent'?'display:inline-flex':'display:none'}" id="completionDoneBtn" onclick="closeCompletionGate()">전송 확인 완료 · 홈으로</button></div>`);document.body.appendChild(gate);if(options.autoSend&&status!=='sent')setTimeout(sendCompletionMail,350);}
 async function sendDayReportTransport(payload){let lastError=null;try{const response=await fetch('/.netlify/functions/send-day-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(response.ok){const body=await response.json().catch(()=>({ok:true}));if(body.ok!==false)return{method:'netlify'};throw new Error(body.reason||'Netlify 전송 실패');}throw new Error(`Netlify ${response.status}`);}catch(e){lastError=e;}if(!emailJSReady)initEmailJS();if(window.emailjs&&emailJSReady){try{await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,payload);return{method:'emailjs'};}catch(e){lastError=e;}}throw lastError||new Error('사용 가능한 메일 전송 경로가 없습니다.');}
-async function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!isDayLearningComplete(pendingCompletion.day)){S.dayDone[pendingCompletion.day]=false;pendingCompletion.status='error';pendingCompletion.error='DAY 전체 단어 학습이 완료되지 않아 보고를 전송할 수 없습니다.';S.pendingCompletion=pendingCompletion;save();if(st){st.className='mail-status err';st.textContent=pendingCompletion.error;}if(btn)btn.disabled=false;return;}if(!st||!btn)return;btn.disabled=true;pendingCompletion.status='sending';pendingCompletion.error='';S.pendingCompletion=pendingCompletion;save();st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';try{const sent=await sendDayReportTransport(completionPayload(pendingCompletion));const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:sent.method});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;S.dayLog[pendingCompletion.day].mailConfirmedAt=now;S.dayDone[pendingCompletion.day]=true;pendingCompletion.status='sent';pendingCompletion.sentAt=now;S.pendingCompletion=pendingCompletion;save();st.className='mail-status ok';st.textContent=`전송 완료: ${ADMIN_EMAIL}`;btn.style.display='none';$('#completionDoneBtn').style.display='inline-flex';renderSidebar();}catch(e){console.error(e);pendingCompletion.status='error';pendingCompletion.error='자동 전송에 실패했습니다. 네트워크와 메일 설정을 확인한 뒤 다시 시도하세요.';pendingCompletion.failCount=(+pendingCompletion.failCount||0)+1;S.pendingCompletion=pendingCompletion;S.dayDone[pendingCompletion.day]=false;save();btn.disabled=false;st.className='mail-status err';st.textContent=pendingCompletion.error;updateCompletionFallback();}}
-
-/* ===== 대체 전송 경로 (2회 실패 또는 오프라인 시 노출) ===== */
-function mailFallbackUnlocked(){return !!(pendingCompletion&&((+pendingCompletion.failCount||0)>=2||navigator.onLine===false));}
-function updateCompletionFallback(){const box=$('#completionFallback');if(!box)return;
- box.style.display=(mailFallbackUnlocked()&&(!pendingCompletion||pendingCompletion.status!=='sent'))?'block':'none';}
-function openMailAppFallback(){if(!pendingCompletion)return;
- const subject=encodeURIComponent(`[2000_18DAY] DAY ${pendingCompletion.day} 학습 보고`);
- const body=encodeURIComponent(completionReportText(pendingCompletion));
- window.location.href=`mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
- const st=$('#completionMailStatus');if(st){st.className='mail-status';st.textContent='메일 앱을 열었습니다. 전송을 마친 뒤 아래 DAY 완료 버튼을 누르세요.';}}
-/* 오프라인 완료는 학생 단독 실행 불가 — 관리자 PIN 인증 필요 */
-function requestOfflineCompletion(){const box=$('#offlinePinBox');if(!box)return;
- box.style.display='block';const inp=$('#offlinePinInput');if(inp){inp.value='';inp.focus();
-  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();confirmOfflineCompletion();}};}
- const err=$('#offlinePinError');if(err)err.textContent='';}
-function confirmOfflineCompletion(){const inp=$('#offlinePinInput'),err=$('#offlinePinError');
- const v=(inp&&inp.value||'').trim();
- if(v.length!==4||pinHash(v)!==PW_ADMIN_FNV32){if(err)err.textContent='관리자 PIN이 올바르지 않습니다.';if(inp)inp.select();return;}
- if(err)err.textContent='';completeDayOffline();}
-function completeDayOffline(){if(!pendingCompletion)return;
- const day=pendingCompletion.day;
- if(!isDayLearningComplete(day)){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='DAY 전체 단어 학습이 완료되지 않아 완료할 수 없습니다.';}return;}
- const now=new Date().toISOString();
- S.pendingReports=Array.isArray(S.pendingReports)?S.pendingReports:[];
- const payload=completionPayload(pendingCompletion);
- if(!S.pendingReports.some(r=>r.report_id===payload.report_id))S.pendingReports.push(payload);
- S.dayLog[day]=S.dayLog[day]||{};S.dayLog[day].offlineCompletedAt=now;S.dayLog[day].mailPending=true;S.dayLog[day].offlineApprovedBy='admin-pin';
- S.dayDone[day]=true;
- pendingCompletion.status='queued';pendingCompletion.queuedAt=now;
- S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();
- const g=document.querySelector('.completion-gate');if(g)g.remove();
- toast('DAY를 완료했습니다. 보고서는 연결되면 자동 전송됩니다.');
- go('Home');retryPendingReports();}
-async function retryPendingReports(){
- if(!Array.isArray(S.pendingReports)||!S.pendingReports.length)return {total:0,success:0};
- const list=[...S.pendingReports];let ok=0;
- for(const payload of list){
-  try{const sent=await sendDayReportTransport(payload);const now=new Date().toISOString();
-   const day=+payload.day||0;
-   S.mailLog.unshift({date:now,day,method:sent.method});if(S.mailLog.length>100)S.mailLog.length=100;
-   if(day){S.dayLog[day]=S.dayLog[day]||{};S.dayLog[day].lastMailAt=now;S.dayLog[day].mailConfirmedAt=now;S.dayLog[day].mailPending=false;S.dayDone[day]=true;}
-   S.pendingReports=S.pendingReports.filter(r=>r.report_id!==payload.report_id);ok++;
-  }catch(e){break;}
- }
- if(ok){save();renderSidebar();}
- return {total:list.length,success:ok};}
-function closeCompletionGate(){if(!pendingCompletion||(pendingCompletion.status!=='sent'&&pendingCompletion.status!=='queued')){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='관리자 이메일 전송 성공 전에는 완료할 수 없습니다.';}return;}const g=document.querySelector('.completion-gate');if(g)g.remove();S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();go('Home');}
+async function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!isDayLearningComplete(pendingCompletion.day)){S.dayDone[pendingCompletion.day]=false;pendingCompletion.status='error';pendingCompletion.error='DAY 전체 단어 학습이 완료되지 않아 보고를 전송할 수 없습니다.';S.pendingCompletion=pendingCompletion;save();if(st){st.className='mail-status err';st.textContent=pendingCompletion.error;}if(btn)btn.disabled=false;return;}if(!st||!btn)return;btn.disabled=true;pendingCompletion.status='sending';pendingCompletion.error='';S.pendingCompletion=pendingCompletion;save();st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';try{const sent=await sendDayReportTransport(completionPayload(pendingCompletion));const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:sent.method});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;S.dayLog[pendingCompletion.day].mailConfirmedAt=now;S.dayDone[pendingCompletion.day]=true;pendingCompletion.status='sent';pendingCompletion.sentAt=now;S.pendingCompletion=pendingCompletion;save();st.className='mail-status ok';st.textContent=`전송 완료: ${ADMIN_EMAIL}`;btn.style.display='none';$('#completionDoneBtn').style.display='inline-flex';renderSidebar();}catch(e){console.error(e);pendingCompletion.status='error';pendingCompletion.error='자동 전송에 실패했습니다. 네트워크와 메일 설정을 확인한 뒤 다시 시도하세요.';S.pendingCompletion=pendingCompletion;S.dayDone[pendingCompletion.day]=false;save();btn.disabled=false;st.className='mail-status err';st.textContent=pendingCompletion.error;}}
+function closeCompletionGate(){if(!pendingCompletion||pendingCompletion.status!=='sent'){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='관리자 이메일 전송 성공 전에는 완료할 수 없습니다.';}return;}const g=document.querySelector('.completion-gate');if(g)g.remove();S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();go('Home');}
 function restorePendingCompletionGate(){if(!S.pendingCompletion)return;pendingCompletion=normalizeCompletionPayload(S.pendingCompletion);S.pendingCompletion=pendingCompletion;showCompletionGate(pendingCompletion,{autoSend:false});}
 let keyHandler=null;
 function bindKeys(){unbindKeys();keyHandler=e=>{const o=$('#opts');if(!o||o.dataset.lock||(SESS&&SESS.blocked))return;const n=parseInt(e.key);if(n>=1&&n<=4){const b=o.querySelectorAll('.opt')[n-1];if(b)b.click();}};document.addEventListener('keydown',keyHandler);}
@@ -994,7 +931,7 @@ function renderConfig(){const c=S.config;
      <div class="mini" style="margin-bottom:18px">학습자 시험에 바로 반영됩니다</div>
      <div class="cfg-row"><div><div class="cfg-label">문제 유형</div><div class="cfg-desc">4지선다 또는 주관식</div></div>
        <div class="seg" style="margin:0"><button class="${c.quizMode==='mc'?'on':''}" onclick="setMode('mc')">4지선다</button><button class="${c.quizMode==='sa'?'on':''}" onclick="setMode('sa')">주관식</button></div></div>
-     <div class="cfg-row"><div><div class="cfg-label">문제 수</div><div class="cfg-desc">전체 = 그날 단어 모두 출제</div></div>
+     <div class="cfg-row"><div><div class="cfg-label">별도 시험 문제 수</div><div class="cfg-desc">DAY 본수업·예약복습은 항상 전체 출제</div></div>
        <div class="seg" style="margin:0"><button class="${c.quizCount===0?'on':''}" onclick="setCount(0)">전체</button><button class="${c.quizCount>0?'on':''}" onclick="setCount(20)">직접지정</button></div></div>
      ${c.quizCount>0?`<div class="cfg-row"><div><div class="cfg-label">출제 문항 수</div><div class="cfg-desc">5 ~ ${MAX_DAY_WORDS}개</div></div>
        <input type="number" class="num-input" id="cfgCount" min="5" max="${MAX_DAY_WORDS}" value="${c.quizCount}" onchange="setCount(this.value)"></div>`:''}
@@ -1010,7 +947,7 @@ function renderConfig(){const c=S.config;
      <input type="range" class="slider" min="0" max="100" step="10" value="${c.enPct}" oninput="setRatio(this.value)">
      <div style="display:flex;justify-content:space-between" class="mini"><span>전부 한→영</span><span>반반</span><span>전부 영→한</span></div>
      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:12px;font-size:13px;color:var(--txt2);line-height:1.7">
-       ${c.quizCount>0?`예시: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b>`:`전체 출제 시 DAY별 단어 수(111~112개)를 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}</div>
+       ${c.quizCount>0?`별도 시험: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b><div class="mini" style="margin-top:8px;color:var(--amber)">※ 정규 DAY 본수업과 D+1·D+3·D+6 예약복습에는 이 제한이 적용되지 않으며 전체 문항을 학습합니다.</div>`:`정규 DAY는 DAY별 단어 수(111~112개)를 모두 출제하고 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}</div>
    </div>
   </div>
   <div class="card" style="margin-top:18px">
