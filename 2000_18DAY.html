@@ -315,6 +315,22 @@ button{min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+
+/* Final wrong-answer and cognition flow */
+.opt.answer-correct-red{border-color:var(--red)!important;background:rgba(255,77,109,.18)!important;color:#fff!important;box-shadow:0 0 0 2px rgba(255,77,109,.28)}
+.wrong-hold-note{margin-top:14px;padding:13px 15px;border:1px solid rgba(255,77,109,.36);border-radius:13px;background:rgba(255,77,109,.07);color:var(--red);font-weight:800;text-align:center}
+.cognition-card{width:min(720px,95vw);padding:42px 30px;border:1px solid var(--line2);border-radius:30px;background:linear-gradient(155deg,rgba(255,77,109,.12),var(--panel2) 35%,var(--panel));text-align:center}
+.cognition-kicker{font-family:var(--disp);font-size:12px;font-weight:800;letter-spacing:2px;color:var(--red)}
+.cognition-word{margin:16px 0 22px;font-family:var(--disp);font-size:clamp(48px,10vw,82px);font-weight:700;letter-spacing:-2px;color:var(--txt)}
+.cognition-meaning{display:flex;flex-wrap:wrap;justify-content:center;min-height:70px;font-size:clamp(23px,5vw,38px);font-weight:900;line-height:1.55;color:var(--cyan)}
+.cognition-char{display:inline-block;opacity:0;transform:translateY(22px);animation:cognitionRise .48s var(--delay) var(--ease) forwards}
+.cognition-char.space{width:.35em}
+@keyframes cognitionRise{to{opacity:1;transform:none}}
+.cognition-note{margin:22px 0 18px;color:var(--txt2);font-weight:700}
+.completion-required{margin:10px 0 4px;text-align:center;font-size:clamp(24px,5vw,38px);font-weight:900;color:#fff}
+.completion-incomplete{text-align:center;color:var(--red);font-size:18px;font-weight:900}
+.completion-lock{text-align:center;color:var(--amber);font-weight:800;line-height:1.65;margin:10px 0 16px}
+
 /* ===== PRINT (A4 시험지) ===== */
 @media print{
  body::before{display:none}
@@ -391,7 +407,8 @@ const DAY_BASE=Math.floor(TOTAL/DAYS),DAY_EXTRA=TOTAL%DAYS,MAX_DAY_WORDS=Math.ce
 // 2,000개 단어를 순서대로 18일에 균등 배분: DAY 1~2는 112개, DAY 3~18은 111개
 (function rebuild18DaySchedule(){let idx=0;for(let d=1;d<=DAYS;d++){const count=DAY_BASE+(d<=DAY_EXTRA?1:0);for(let n=1;n<=count&&idx<TOTAL;n++,idx++){WORDS[idx][1]=d;WORDS[idx][2]=n;}}})();
 const ADMIN_EMAIL='sk01197375068@gmail.com';
-const PW_LEARNER='8081',PW_ADMIN='2007';
+const PW_LEARNER_FNV32=1069609042,PW_ADMIN_FNV32=3475938270; // 평문 PIN은 저장하지 않습니다.
+function pinHash(value){let hash=2166136261;for(const ch of String(value||'')){hash^=ch.charCodeAt(0);hash=Math.imul(hash,16777619)>>>0;}return hash>>>0;}
 const EMAILJS_SERVICE_ID='service_v23hns6';
 const EMAILJS_TEMPLATE_ID='template_v2zb8ni';
 const EMAILJS_PUBLIC_KEY='JJdWMghPhZrilD_ZQ';
@@ -407,9 +424,10 @@ let ROLE=null; // 'learner' | 'admin'
 // 저장 키는 구버전과 동일하게 유지한다. 키를 바꾸면 기존 누적 학습·오답 데이터가 끊어진다.
 const KEY='wm2000_v3';
 const SNAPSHOT_KEY='wm2000_v3_snapshot';
-const APP_DATA_VERSION=6;
+const APP_DATA_VERSION=7;
 const APP_TITLE='2000_18DAY';
-const APP_BUILD='2000_18DAY r2 (2026-07-27)';
+const WRONG_PRIMARY_HOLD_MS=3000;
+const COGNITION_REVEAL_MS=4000;
 const defState=()=>({
  schemaVersion:APP_DATA_VERSION,updatedAt:'',
  seen:{},mastered:{},wrong:{},fav:{},dayDone:{},
@@ -417,35 +435,51 @@ const defState=()=>({
  quizStat:{done:0,correct:0},
  history:[],daily:{},dayLog:{},
  sessions:[],   // 로그인/시험 세션 기록 {login, logout, dur, day, type, correct, total}
- config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},
+ config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},pendingReports:[],
  wrongDetail:{},
  wrongMeta:{},   // id -> 누적 오답 횟수·복습 일정·정복 이력
  wrongHistory:[],// 최근 오답 발생/재시험 정답/정복 이벤트 감사 로그
- mailLog:[]
+ mailLog:[],
+ pendingCompletion:null
 });
 let S;let saveFailed=false;
 function obj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
 function parseStore(key){try{const raw=localStorage.getItem(key);if(!raw)return null;const o=JSON.parse(raw);return obj(o)?o:null;}catch(e){return null;}}
 function validWordId(id){const n=+id;return Number.isInteger(n)&&!!byId[n];}
 function cleanWordMap(map,mode='number'){const out={};if(!obj(map))return out;Object.keys(map).forEach(id=>{if(!validWordId(id))return;const v=map[id];if(mode==='boolean'){if(!!v)out[+id]=true;}else{const n=Math.max(0,Number(v)||0);if(n>0)out[+id]=n;}});return out;}
+function normalizeCompletionPayload(value){if(!obj(value))return null;const day=Math.max(1,Math.min(DAYS,+value.day||1));
+ const src=obj(value.main)?value.main:null;if(!src)return null;
+ // 저장본이 불완전해도 보고서 생성이 실패하지 않도록 필수 필드를 보정한다
+ const main={...src,total:Math.max(0,+src.total||0),correct:Math.max(0,+src.correct||0),
+  pct:Math.max(0,Math.min(100,+src.pct||0)),wrongThis:Array.isArray(src.wrongThis)?src.wrongThis:[]};
+ let retry=obj(value.retry)?value.retry:null;
+ if(retry)retry={...retry,total:Math.max(0,+retry.total||0),correct:Math.max(0,+retry.correct||0),
+  pct:Math.max(0,Math.min(100,+retry.pct||0)),wrongThis:Array.isArray(retry.wrongThis)?retry.wrongThis:[]};
+ const status=['ready','sending','error','sent','queued'].includes(value.status)?value.status:'ready';
+ return{day,main,retry,status:status==='sending'?'ready':status,
+  createdAt:value.createdAt||new Date().toISOString(),sentAt:value.sentAt||null,
+  failCount:Math.max(0,+value.failCount||0),error:typeof value.error==='string'?value.error:''};}
 function normalizeState(raw){const d=defState(),o=obj(raw)?raw:{};const n={...d,...o};
  n.config={...d.config,...(obj(o.config)?o.config:{})};
  n.seen=cleanWordMap(o.seen,'boolean');n.fav=cleanWordMap(o.fav,'boolean');n.mastered=cleanWordMap(o.mastered);n.wrong=cleanWordMap(o.wrong);
- n.dayDone=obj(o.dayDone)?o.dayDone:{};n.daily=obj(o.daily)?o.daily:{};n.dayLog=obj(o.dayLog)?o.dayLog:{};n.wrongDetail=obj(o.wrongDetail)?o.wrongDetail:{};n.wrongMeta=obj(o.wrongMeta)?o.wrongMeta:{};
+ n.dayDone={};if(obj(o.dayDone))Object.keys(o.dayDone).forEach(k=>{const day=+k;if(day>=1&&day<=DAYS&&o.dayDone[k])n.dayDone[day]=true;});n.daily=obj(o.daily)?o.daily:{};n.dayLog=obj(o.dayLog)?o.dayLog:{};n.wrongDetail=obj(o.wrongDetail)?o.wrongDetail:{};n.wrongMeta=obj(o.wrongMeta)?o.wrongMeta:{};
  n.quizStat=obj(o.quizStat)?{done:Math.max(0,+o.quizStat.done||0),correct:Math.max(0,+o.quizStat.correct||0)}:{done:0,correct:0};
  n.history=Array.isArray(o.history)?o.history.slice(0,500):[];n.sessions=Array.isArray(o.sessions)?o.sessions.slice(0,500):[];n.mailLog=Array.isArray(o.mailLog)?o.mailLog.slice(0,200):[];n.wrongHistory=Array.isArray(o.wrongHistory)?o.wrongHistory.slice(0,2000):[];
- n.streak=Math.max(0,+o.streak||0);n.xp=Math.max(0,+o.xp||0);n.lastDate=typeof o.lastDate==='string'?o.lastDate:'';
+ n.streak=Math.max(0,+o.streak||0);n.xp=Math.max(0,+o.xp||0);n.lastDate=typeof o.lastDate==='string'?o.lastDate:'';n.pendingCompletion=normalizeCompletionPayload(o.pendingCompletion);
  Object.keys(n.wrongMeta).forEach(id=>{if(!validWordId(id))delete n.wrongMeta[id];});
- Object.keys(n.wrong).forEach(id=>{const w=byId[+id],m=n.wrongMeta[id]=obj(n.wrongMeta[id])?n.wrongMeta[id]:{};m.firstWrongDate=m.firstWrongDate||n.lastDate||today();m.lastWrongDate=m.lastWrongDate||m.firstWrongDate;m.nextReviewDate=m.nextReviewDate||datePlus(m.lastWrongDate,3);m.reviewCount=Math.max(0,+m.reviewCount||0);m.totalWrongCount=Math.max(+m.totalWrongCount||0,n.wrong[id]||0);m.sourceDay=+m.sourceDay||w[1];m.active=true;});
- Object.keys(n.wrongMeta).forEach(id=>{const m=n.wrongMeta[id];if(!n.wrong[id])m.active=false;});
+ Object.keys(n.wrong).forEach(id=>{const w=byId[+id],m=n.wrongMeta[id]=obj(n.wrongMeta[id])?n.wrongMeta[id]:{};m.firstWrongDate=m.firstWrongDate||n.lastDate||today();m.originDate=m.originDate||m.firstWrongDate;m.lastWrongDate=m.lastWrongDate||m.firstWrongDate;m.reviewStage=['D1','D3','D6','FOCUS','STABLE'].includes(m.reviewStage)?m.reviewStage:'D1';m.nextReviewDate=m.nextReviewDate||(m.reviewStage==='D1'?datePlus(m.originDate,1):datePlus(today(),1));m.reviewCount=Math.max(0,+m.reviewCount||0);m.totalWrongCount=Math.max(+m.totalWrongCount||0,n.wrong[id]||0);m.sourceDay=+m.sourceDay||w[1];m.active=m.reviewStage!=='STABLE';});
+ Object.keys(n.wrongMeta).forEach(id=>{const m=n.wrongMeta[id];if(!n.wrong[id]){m.active=false;if(m.reviewStage!=='STABLE')m.reviewStage='STABLE';m.nextReviewDate=null;}});
  n.schemaVersion=APP_DATA_VERSION;return n;}
-function load(){const primary=parseStore(KEY),snapshot=parseStore(SNAPSHOT_KEY);S=normalizeState(primary||snapshot||defState());
+function load(){const primary=parseStore(KEY),snapshot=parseStore(SNAPSHOT_KEY),source=primary||snapshot||defState(),sourceSchema=Math.max(0,+source.schemaVersion||0);S=normalizeState(source);
  if(!S._migrated_v4){if(S.config.quizCount===10)S.config.quizCount=0;S._migrated_v4=true;}
- // 30일판 누적 기록을 18일판에 보존·환산. 단어별 seen/wrong/mastered는 ID 기반으로 유지.
  if(!S._migrated_18day){
   const remap=d=>d>0?Math.max(1,Math.min(DAYS,Math.ceil((+d||1)*DAYS/30))):0;
-  const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;t.lastMailAt=v.lastMailAt||t.lastMailAt;});
-  S.dayLog=merged;(S.sessions||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});(S.history||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});S.dayDone={};S._migrated_18day=true;
+  const oldDone={...S.dayDone};const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;t.lastMailAt=v.lastMailAt||t.lastMailAt;t.mailConfirmedAt=v.mailConfirmedAt||t.mailConfirmedAt;});
+  S.dayLog=merged;(S.sessions||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});(S.history||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});S.dayDone={};Object.keys(oldDone).forEach(k=>{if(oldDone[k])S.dayDone[remap(k)]=true;});S._migrated_18day=true;
+ }
+ if(!S._mailGateV7Migrated){
+  let contiguous=true;for(let d=1;d<=DAYS;d++){const log=S.dayLog[d]||{};const pendingForDay=S.pendingCompletion&&S.pendingCompletion.day===d&&S.pendingCompletion.status!=='sent';if(!pendingForDay&&(log.mailConfirmedAt||log.lastMailAt))S.dayDone[d]=true;const p=dayProgress(d);if(sourceSchema<7&&contiguous&&!pendingForDay&&p.total>0&&p.seen===p.total){S.dayDone[d]=true;log.legacyCompletedAt=log.legacyCompletedAt||new Date().toISOString();S.dayLog[d]=log;}else if(!S.dayDone[d])contiguous=false;}
+  S._mailGateV7Migrated=true;
  }
  save(true);}
 function save(skipSnapshot=false){try{S.schemaVersion=APP_DATA_VERSION;S.updatedAt=new Date().toISOString();const payload=JSON.stringify(S);const prev=localStorage.getItem(KEY);if(!skipSnapshot&&prev){try{const old=JSON.parse(prev);if(obj(old))localStorage.setItem(SNAPSHOT_KEY,prev);}catch(e){}}localStorage.setItem(KEY,payload);saveFailed=false;return true;}catch(e){console.error('학습 데이터 저장 실패',e);saveFailed=true;const t=document.querySelector&&document.querySelector('#toast');if(t)toast('저장 공간 오류: 백업 파일을 내려받으세요');return false;}}
@@ -471,9 +505,14 @@ function addXP(n,x,y){const before=levelInfo().lv;S.xp+=n;const t=today();
 function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function datePlus(dateStr,days){const d=new Date((dateStr||today())+'T12:00:00');d.setDate(d.getDate()+days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function uniqueWords(list){const seen=new Set();return (list||[]).filter(w=>w&&!seen.has(w[0])&&seen.add(w[0]));}
-function dueWrongList(){const t=today();return Object.keys(S.wrongMeta||{}).filter(id=>{const m=S.wrongMeta[id];return m&&m.active&&m.nextReviewDate&&m.nextReviewDate<=t&&S.wrong[id]>0;}).map(id=>byId[+id]).filter(Boolean);}
-function syncScheduleState(){S.wrongMeta=S.wrongMeta||{};Object.keys(S.wrong||{}).forEach(id=>{if(S.wrong[id]>0&&!S.wrongMeta[id])S.wrongMeta[id]={firstWrongDate:S.lastDate||today(),lastWrongDate:S.lastDate||today(),nextReviewDate:today(),reviewCount:0,sourceDay:(byId[+id]||[])[1]||0,active:true};});
- for(let d=1;d<=DAYS;d++){const p=dayProgress(d);if(p.total>0&&p.seen===p.total)S.dayDone[d]=true;}save();}
+function reviewStageLabel(stage){return({D1:'D+1 기억 확인',D3:'D+3 강화 확인',D6:'D+6 안정화 확인',FOCUS:'집중 케어',STABLE:'안정화 완료'})[stage]||'예약 복습';}
+function futureReviewDate(date){return date<=today()?datePlus(today(),1):date;}
+function ensureWrongMeta(w){const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={});m.firstWrongDate=m.firstWrongDate||today();m.originDate=m.originDate||m.firstWrongDate;m.lastWrongDate=m.lastWrongDate||today();m.reviewStage=['D1','D3','D6','FOCUS','STABLE'].includes(m.reviewStage)?m.reviewStage:'D1';m.reviewCount=Math.max(0,+m.reviewCount||0);m.totalWrongCount=Math.max(0,+m.totalWrongCount||0);m.sourceDay=w[1];return m;}
+function scheduleInitialD1(w){const m=ensureWrongMeta(w);if(!m.active||m.reviewStage==='STABLE'){m.firstWrongDate=today();m.originDate=today();m.reviewStage='D1';m.nextReviewDate=datePlus(today(),1);m.reviewCount=0;}else if(!m.nextReviewDate){m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),1));}m.active=true;return m;}
+function routeScheduledCorrect(w,m){const stage=m.reviewStage||'D1';m.lastReviewedDate=today();m.lastCorrectDate=today();m.reviewCount=(m.reviewCount||0)+1;if(stage==='D1'){m.reviewStage='D3';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),3));m.active=true;}else if(stage==='D3'){m.reviewStage='D6';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),6));m.active=true;}else if(stage==='D6'){resolveWrong(w[0],'D+6-stable');}else if(stage==='FOCUS'){m.focusCorrectStreak=(m.focusCorrectStreak||0)+1;if(m.focusCorrectStreak>=2)resolveWrong(w[0],'focus-stable');else{m.nextReviewDate=datePlus(today(),1);m.active=true;}}}
+function routeScheduledWrong(w,m){const stage=m.reviewStage||'D1';m.reviewCount=(m.reviewCount||0)+1;m.focusCorrectStreak=0;if(stage==='D1'){m.reviewStage='D3';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),3));}else{m.reviewStage='FOCUS';m.nextReviewDate=datePlus(today(),1);}m.active=true;return stage;}
+function dueWrongList(){const t=today();const rank={D1:1,D3:2,D6:3,FOCUS:4};return Object.keys(S.wrongMeta||{}).filter(id=>{const m=S.wrongMeta[id];return validWordId(id)&&m&&m.active&&m.nextReviewDate&&m.nextReviewDate<=t&&S.wrong[id]>0;}).sort((a,b)=>{const A=S.wrongMeta[a],B=S.wrongMeta[b];return String(A.nextReviewDate).localeCompare(String(B.nextReviewDate))||(rank[A.reviewStage]||9)-(rank[B.reviewStage]||9);}).map(id=>byId[+id]).filter(Boolean);}
+function syncScheduleState(){S.wrongMeta=S.wrongMeta||{};S.dayDone=obj(S.dayDone)?S.dayDone:{};Object.keys(S.wrong||{}).forEach(id=>{if(S.wrong[id]>0){const w=byId[+id];if(w){const m=ensureWrongMeta(w);if(!m.nextReviewDate&&m.reviewStage!=='STABLE')m.nextReviewDate=datePlus(today(),1);m.active=m.reviewStage!=='STABLE';}}});for(let d=1;d<=DAYS;d++){const log=S.dayLog[d]||{};if(log.mailConfirmedAt)S.dayDone[d]=true;}save();}
 function touchStreak(){const t=today();if(S.lastDate===t)return;
  const y=new Date();y.setDate(y.getDate()-1);const ys=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
  S.streak=(S.lastDate===ys)?S.streak+1:1;S.lastDate=t;save();}
@@ -492,16 +531,10 @@ const cumulativeWrongCount=()=>Object.keys(S.wrongMeta||{}).reduce((sum,id)=>sum
 const conqueredWrongCount=()=>Object.keys(S.wrongMeta||{}).filter(id=>validWordId(id)&&(+S.wrongMeta[id].totalWrongCount||0)>0&&!S.wrong[id]).length;
 function dayCumulativeWrongCount(day){return wordsOf(day).reduce((sum,w)=>sum+Math.max(0,+((S.wrongMeta[w[0]]||{}).totalWrongCount)||0),0);}
 function logWrongEvent(w,event,phase,note=''){S.wrongHistory=S.wrongHistory||[];const m=S.wrongMeta[w[0]]||{};S.wrongHistory.unshift({date:new Date().toISOString(),id:w[0],word:w[3],day:w[1],event,phase:phase||'',note,activeCount:S.wrong[w[0]]||0,totalWrongCount:m.totalWrongCount||0});if(S.wrongHistory.length>2000)S.wrongHistory.length=2000;}
-function resolveWrong(id,phase='manual-clear'){const w=byId[+id];if(!w)return;const m=S.wrongMeta[id]||(S.wrongMeta[id]={});S.wrong[id]=0;m.active=false;m.resolvedDate=today();m.lastCorrectDate=today();m.resolvedCount=(m.resolvedCount||0)+1;logWrongEvent(w,'resolved',phase);save();}
+function resolveWrong(id,phase='manual-clear'){const w=byId[+id];if(!w)return;const m=S.wrongMeta[id]||(S.wrongMeta[id]={});S.wrong[id]=0;m.active=false;m.reviewStage='STABLE';m.nextReviewDate=null;m.resolvedDate=today();m.lastCorrectDate=today();m.resolvedCount=(m.resolvedCount||0)+1;logWrongEvent(w,'resolved',phase);save();}
 function dayProgress(d){const ws=wordsOf(d);return{seen:ws.filter(w=>S.seen[w[0]]).length,total:ws.length};}
-function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(!dayCompleted(d))return d;}return DAYS;}
-// DAY 완료 판정: 단어를 모두 봤거나(전체 출제) 본 시험을 1회 이상 마쳤을 때(문항 수 제한 출제)
-function dayCompleted(d){const p=dayProgress(d);if(p.total>0&&p.seen===p.total)return true;
- if(S.dayDone&&S.dayDone[d])return true;
- const lg=S.dayLog&&S.dayLog[d];return !!(lg&&(lg.quizzes||0)>0);}
-function currentDay(){ // 학습자 "며칠째": 완료한 DAY + 1, 최대 18
- let done=0;for(let d=1;d<=DAYS;d++){if(dayCompleted(d))done=d;else break;}
- return Math.min(done+1,DAYS);}
+function firstUnfinishedDay(){if(S.pendingCompletion)return S.pendingCompletion.day;for(let d=1;d<=DAYS;d++){if(!S.dayDone[d])return d;}return DAYS;}
+function currentDay(){return firstUnfinishedDay();}
 
 /* ===== 한글 유사도 (주관식 채점) ===== */
 // 뜻 문자열을 정답 후보 배열로 분해: 콤마/대괄호/괄호 분리
@@ -537,18 +570,15 @@ function checkAnswer(userInput,meanStr){
  const variants=meaningVariants(meanStr);
  let best=0;
  for(const v of variants){const nv=normKo(v);if(!nv)continue;
-  // 완전일치
   if(u===nv){best=1;break;}
-  // 부분일치는 "뜻 항목 하나를 사실상 다 쓴 경우"만 인정한다.
-  // (예: "공급"→"공급하다" 인정 / "사람"→"영향을미치는사람" 불인정)
+  // 부분일치는 "뜻 항목 하나를 사실상 다 쓴 경우"만 인정 (길이비 50% 이상)
   const shorter=Math.min(u.length,nv.length),longer=Math.max(u.length,nv.length);
-  const contains=nv.includes(u)||u.includes(nv);
-  if(contains&&shorter>=2&&shorter/longer>=0.5){best=1;break;}
+  if((nv.includes(u)||u.includes(nv))&&shorter>=2&&shorter/longer>=0.5){best=1;break;}
   best=Math.max(best,simRatio(u,nv));
  }
  return {ok:best>=th,score:Math.round(best*100)};
 }
-/* 같은 뜻을 가진 단어들(동의어)을 미리 묶어둔다: 한→영 주관식에서 함께 정답 인정 */
+/* 뜻이 같은 단어들을 묶어 한→영 주관식에서 함께 정답 처리 */
 const SYNONYM_GROUPS=(()=>{const m={};WORDS.forEach(w=>{const k=(w[4]||'').trim();(m[k]=m[k]||[]).push(w[3]);});
  const out={};Object.keys(m).forEach(k=>{if(m[k].length>1)m[k].forEach(en=>out[en.toLowerCase()]=m[k].map(x=>x.toLowerCase()));});return out;})();
 function acceptedSpellings(word){const k=(word||'').toLowerCase();return SYNONYM_GROUPS[k]||[k];}
@@ -572,13 +602,17 @@ function pinPress(k){if(k==='clear'){pinBuf='';}else if(k==='del'){pinBuf=pinBuf
  if(pinBuf.length===4)setTimeout(tryLogin,150);}
 function updatePinDots(){document.querySelectorAll('.pin-dot').forEach((d,i)=>{d.classList.remove('err');d.classList.toggle('filled',i<pinBuf.length);});}
 function tryLogin(){
- if(pinBuf===PW_LEARNER){ROLE='learner';enterApp();}
- else if(pinBuf===PW_ADMIN){ROLE='admin';enterApp();}
+ const pinDigest=pinHash(pinBuf);
+ if(pinDigest===PW_LEARNER_FNV32){ROLE='learner';enterApp();}
+ else if(pinDigest===PW_ADMIN_FNV32){ROLE='admin';enterApp();}
  else{document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('err'));setTimeout(()=>{pinBuf='';updatePinDots();},500);}
 }
 function logout(){ROLE=null;pinBuf='';updatePinDots();$('#shell').classList.add('hidden');$('#loginScreen').style.display='grid';}
 function enterApp(){startSession();$('#loginScreen').style.display='none';$('#shell').classList.remove('hidden');
- buildSidebar();buildTopbar();go('Home');}
+ // 보류된 보고서가 있으면 자동 재전송하고, 온라인 복귀 시에도 재시도한다
+ try{retryPendingReports();if(!window.__mailRetryBound){window.__mailRetryBound=true;window.addEventListener('online',()=>retryPendingReports());}}catch(_e){}
+
+ buildSidebar();buildTopbar();go('Home');if(ROLE==='learner'&&S.pendingCompletion)setTimeout(restorePendingCompletionGate,80);}
 
 /* ===== SIDEBAR (역할별) ===== */
 const NAV_LEARNER=[['Home','대시보드','M3 11l9-8 9 8M5 10v10h14V10'],['Study','학습 (DAY)','rect'],['Quiz','퀴즈','circle'],['Review','오답노트','refresh']];
@@ -608,26 +642,26 @@ function renderSidebar(){if(ROLE==='learner'){const L=levelInfo();
 let cur='Home';
 const TITLES={Home:['대시보드',''],Study:['학습 (DAY)','18일 완성 · 하루 111~112단어'],Quiz:['퀴즈','오늘의 시험'],
  Review:['오답노트','틀린 단어 정복'],Admin:['학습 리포트','진도 · 이력 · 출력'],Logs:['로그인 기록','접속 · 시험 시간'],Config:['시험 설정','출제 방식 관리']};
-function go(tab){cur=tab;document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#v'+tab).classList.add('on');
+function go(tab){if(ROLE==='learner'&&S.pendingCompletion&&tab!=='Home'){restorePendingCompletionGate();return;}cur=tab;document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#v'+tab).classList.add('on');
  document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('on',n.dataset.nav===tab));
  $('#pgTitle').textContent=TITLES[tab][0];$('#pgSub').textContent=TITLES[tab][1];window.scrollTo(0,0);
  ({Home:renderHome,Study:renderStudy,Quiz:renderQuiz,Review:renderReview,Admin:renderAdmin,Logs:renderLogs,Config:renderConfig})[tab]();renderSidebar();}
 
 /* ===== HOME ===== */
 function renderHome(){ROLE==='learner'?renderHomeLearner():renderHomeAdmin();}
-function renderHomeLearner(){const cd=currentDay();const dp=dayProgress(cd);const pct=Math.round(seenCount()/TOTAL*100);const due=dueWrongList().length;
+function renderHomeLearner(){const cd=currentDay();const dp=dayProgress(cd);const pct=Math.round(seenCount()/TOTAL*100);const dueList=dueWrongList(),due=dueList.length;const stageCounts=dueList.reduce((a,w)=>{const k=(S.wrongMeta[w[0]]||{}).reviewStage||'D1';a[k]=(a[k]||0)+1;return a;},{});
  $('#pgSub').textContent=`오늘은 ${cd}일째 · 18일 완성 과정`;
  $('#vHome').innerHTML=`
   <div class="day-hero">
     <div class="eyebrow">TODAY · ${cd}일째</div>
     <div class="daynum grad-txt">DAY ${cd}</div>
-    <div class="dtot">${due?`3일 복습 오답 <b style="color:var(--red)">${due}개</b>를 먼저 풀고, 오늘 단어 ${dp.total}개를 진행합니다`:`오늘 학습할 단어 ${dp.total}개 · 지금 바로 시험 보기`}</div>
-    <button class="btn btn-hero lg cta" onclick="startDayFlow(${cd})">${due?`▶ 오답 ${due}개 먼저 복습`:'▶ 오늘의 시험 시작'}</button>
+    <div class="dtot">${due?`D+1·D+3·D+6 예약 복습 <b style="color:var(--red)">${due}개</b>를 먼저 풀고, 오늘 단어 ${dp.total}개를 진행합니다`:`오늘 학습할 단어 ${dp.total}개 · 지금 바로 시험 보기`}</div>
+    <button class="btn btn-hero lg cta" onclick="startDayFlow(${cd})">${due?`▶ 예약 복습 ${due}개 먼저`:'▶ 오늘의 시험 시작'}</button>
   </div>
-  ${due?`<div class="mail-note" style="border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.08)">🔁 <b style="color:var(--red)">3일 간격 오답 복습 예정</b> · 복습 시험이 끝나면 DAY ${cd} 본 수업이 자동으로 이어집니다.</div>`:''}
+  ${due?`<div class="mail-note" style="border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.08)">🔁 <b style="color:var(--red)">예약 복습</b> · D+1 ${stageCounts.D1||0} · D+3 ${stageCounts.D3||0} · D+6 ${stageCounts.D6||0} · 집중 ${stageCounts.FOCUS||0}</div>`:''}
   <div class="grid g-3">
     <div class="card"><div class="stat-lbl">전체 진도</div><div class="stat-big grad-txt">${pct}%</div><div class="mini"><span class="num">${seenCount()}</span>/${TOTAL} 단어</div><div class="progline"><i style="width:${pct}%"></i></div></div>
-    <div class="card"><div class="stat-lbl">연속 학습</div><div class="stat-big grad-pink">${S.streak}<span style="font-size:20px">일</span></div><div class="mini">🔥 매일 이어가기</div></div>
+    <div class="card"><div class="stat-lbl">완료 DAY</div><div class="stat-big grad-pink">${Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length}<span style="font-size:20px">/${DAYS}</span></div><div class="mini">관리자 보고 전송 완료 기준</div></div>
     <div class="card"><div class="stat-lbl">오답</div><div class="stat-big grad-lime">${wrongList().length}</div><div class="mini">오늘 복습 예정 ${due}개</div></div>
   </div>
   <div class="grid g-3" style="margin-top:18px">
@@ -676,7 +710,7 @@ function renderStudy(){const cd=currentDay();const doneN=Object.keys(S.dayDone).
   </div><div class="daygrid" id="dayGrid"></div>`;
  const g=$('#dayGrid');
  for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);let cls='daycell';
-  if(dayCompleted(d))cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';
+  if(S.dayDone[d])cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';
   const c=el('button',cls,`<div class="dn">${d}</div><div class="dp">${dp.seen}/${dp.total}</div><span class="ring" style="width:${dp.seen/dp.total*100}%"></span>`);
   c.onclick=()=>openDayPick(d);g.appendChild(c);}
 }
@@ -716,7 +750,7 @@ function renderFlash(){const {list,i,day}=SESS;const w=list[i];const fav=S.fav[w
 }
 function flip(){$('#flash').classList.toggle('flip');}
 function fNext(e){const w=SESS.list[SESS.i];if(!S.seen[w[0]]){S.seen[w[0]]=true;markDaily('studied');}save();
- if(SESS.i===SESS.list.length-1){const day=SESS.day;S.dayDone[day]=true;save();startDayFlow(day);return;}SESS.i++;renderFlash();}
+ if(SESS.i===SESS.list.length-1){const day=SESS.day;save();startDayFlow(day);return;}SESS.i++;renderFlash();}
 function fPrev(){if(SESS.i>0){SESS.i--;renderFlash();}}
 
 /* ===== QUIZ ===== */
@@ -745,28 +779,26 @@ function pickDayForQuiz(){const cd=currentDay();
    <button class="btn btn-ghost wfull" style="margin-top:10px" onclick="go('Quiz')">← 뒤로</button>
  </div></div>`;
 }
-// 오늘의 시험: 3일 오답 복습 → 본 DAY 시험 순서로 진행
+// 오늘의 시험: D+1·D+3·D+6 예약 복습 → 본 DAY 시험 순서로 진행
 function buildQuestions(pool,forceAll=false){const N=forceAll?pool.length:(S.config.quizCount>0?Math.min(S.config.quizCount,pool.length):pool.length);const chosen=shuffle(pool).slice(0,N);
  const enCnt=Math.round(N*S.config.enPct/100);const dirs=shuffle([...Array(enCnt).fill('en'),...Array(N-enCnt).fill('ko')]);return shuffle(chosen).map((w,i)=>({w,dir:dirs[i]||'en'}));}
-function startDayFlow(day){touchStreak();const due=dueWrongList();if(due.length){startScheduledReview(due,day);return;}startTodayQuiz(day);}
+function startDayFlow(day){if(S.pendingCompletion){restorePendingCompletionGate();return;}touchStreak();const due=dueWrongList();if(due.length){startScheduledReview(due,day);return;}startTodayQuiz(day);}
 function startScheduledReview(list,resumeDay){const qs=buildQuestions(uniqueWords(list),true);SESS={mode:S.config.quizMode,day:0,originDay:resumeDay,resumeDay,phase:'scheduled',qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
- $('#pgTitle').textContent='3일 오답 복습';$('#pgSub').textContent=`오답 ${qs.length}개를 먼저 복습한 뒤 DAY ${resumeDay} 진행`;SESS.mode==='sa'?renderSA():renderMC();}
-function startTodayQuiz(day){touchStreak();const qs=buildQuestions(wordsOf(day));SESS={mode:S.config.quizMode,day,originDay:day,phase:'main',qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
+ $('#pgTitle').textContent='예약 오답 복습';$('#pgSub').textContent=`D+1·D+3·D+6 대상 ${qs.length}개를 복습한 뒤 DAY ${resumeDay} 진행`;SESS.mode==='sa'?renderSA():renderMC();}
+function startTodayQuiz(day){touchStreak();const qs=buildQuestions(wordsOf(day),true);SESS={mode:S.config.quizMode,day,originDay:day,phase:'main',qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
  $('#pgTitle').textContent='시험';$('#pgSub').textContent=`DAY ${day}`;if(SESS.mode==='sa')renderSA();else renderMC();}
 function startImmediateRetry(list,day,mode,mainResult){const qs=buildQuestions(uniqueWords(list),true);SESS={mode,day,originDay:day,phase:'retry',mainResult,qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
  $('#pgTitle').textContent='오답 재시험';$('#pgSub').textContent=`DAY ${day} · 방금 틀린 ${qs.length}개`;SESS.mode==='sa'?renderSA():renderMC();}
 let wrongRevealTimer=null;
 function clearWrongReveal(){clearTimeout(wrongRevealTimer);wrongRevealTimer=null;const o=document.querySelector('.wrong-reveal');if(o)o.remove();if(SESS)SESS.blocked=false;}
-function showWrongReveal(w,dir,onDone){clearWrongReveal();if(SESS)SESS.blocked=true;unbindKeys();const o=el('div','wrong-reveal',`<div class="wrong-reveal-card" role="dialog" aria-modal="true" aria-live="assertive">
- <div class="wrong-reveal-kicker">CORRECT ANSWER · 5 SECONDS</div><div class="wrong-reveal-word">${w[3]}</div><div class="wrong-reveal-meaning">${w[4]}</div>
- <div class="wrong-reveal-note">정답을 눈으로 확인하고 소리 내어 한 번 읽으세요.</div></div>`);document.body.appendChild(o);
- wrongRevealTimer=setTimeout(()=>{clearWrongReveal();onDone();},5000);}
+function cognitionChars(text){const chars=Array.from(String(text||''));const step=Math.max(55,Math.floor((COGNITION_REVEAL_MS-650)/Math.max(1,chars.length)));return chars.map((ch,i)=>/\s/.test(ch)?'<span class="cognition-char space">&nbsp;</span>':`<span class="cognition-char" style="--delay:${i*step}ms">${String(ch).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</span>`).join('');}
+function showScheduledCognition(w,onDone){clearTimeout(wrongRevealTimer);const old=document.querySelector('.wrong-reveal');if(old)old.remove();const o=el('div','wrong-reveal',`<div class="cognition-card" role="dialog" aria-modal="true" aria-live="assertive"><div class="cognition-kicker">예약 복습 재오답 · 한글 뜻 인지</div><div class="cognition-word">${w[3]}</div><div class="cognition-meaning" aria-label="${w[4]}">${cognitionChars(w[4])}</div><div class="cognition-note">영단어는 고정하고 한글 뜻을 천천히 다시 연결합니다.</div><button class="btn btn-hero wfull cognition-next" type="button" disabled>뜻 인지 중</button></div>`);document.body.appendChild(o);const next=o.querySelector('.cognition-next');wrongRevealTimer=setTimeout(()=>{next.disabled=false;next.textContent='NEXT';next.focus();},COGNITION_REVEAL_MS);next.addEventListener('click',()=>{if(next.disabled)return;clearWrongReveal();onDone();});}
+function showWrongReveal(w,dir,onDone){clearTimeout(wrongRevealTimer);if(SESS)SESS.blocked=true;unbindKeys();const scheduled=SESS&&SESS.phase==='scheduled';wrongRevealTimer=setTimeout(()=>{if(scheduled)showScheduledCognition(w,onDone);else{clearWrongReveal();onDone();}},WRONG_PRIMARY_HOLD_MS);}
 function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
  // dir 'en' => 영단어 보고 뜻 선택 / 'ko' => 뜻 보고 단어 선택
- // 보기에 표시될 텍스트가 정답과 완전히 같은 단어는 오답 보기에서 제외한다.
+ // 보기에 표시될 텍스트가 정답과 완전히 같은 단어는 오답 보기에서 제외
  const face=x=>dir==='en'?x[4]:x[3];
- const correctFace=face(w),seenFace=new Set([correctFace]);
- const distract=[];
+ const seenFace=new Set([face(w)]),distract=[];
  for(const x of shuffle(WORDS)){
   if(distract.length>=3)break;
   if(x[0]===w[0])continue;
@@ -787,10 +819,10 @@ function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
 }
 function pickMC(btn,w){const opts=$('#opts');if(opts.dataset.lock||SESS.blocked)return;opts.dataset.lock=1;
  const dir=SESS.qs[SESS.i].dir;
- // ID가 달라도 표시 텍스트가 정답과 같으면 정답으로 인정 (억울한 오답 방지)
+ // ID가 달라도 표시 텍스트가 정답과 같으면 정답 인정 (억울한 오답 방지)
  const ok=(+btn.dataset.id===w[0])||(btn.dataset.face||'')===((dir==='en'?w[4]:w[3])||'');
- opts.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(+b.dataset.id===w[0])b.classList.add('correct');else if(b===btn)b.classList.add('wrong');});
- gradeAnswer(w,ok,btn);if(ok)setTimeout(nextQ,650);else showWrongReveal(w,dir,nextQ);
+ opts.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(+b.dataset.id===w[0])b.classList.add(ok?'correct':'answer-correct-red');else if(b===btn)b.classList.add('wrong');});
+ gradeAnswer(w,ok,btn);if(ok)setTimeout(nextQ,650);else{const card=opts.closest('.card');if(card){const note=el('div','wrong-hold-note',SESS.phase==='scheduled'?'붉은 정답을 3초 확인한 뒤 한글 뜻 인지 화면으로 이동합니다.':'붉은 정답을 3초 확인합니다. 당일 DAY에는 추가 인지 단계가 없습니다.');card.appendChild(note);}showWrongReveal(w,dir,nextQ);}
 }
 function renderSA(){const {qs,i,correct}=SESS;const {w,dir}=qs[i];
  const q=dir==='en'?w[3]:w[4];const label=dir==='en'?'이 단어의 뜻을 쓰세요':'이 뜻의 영어 단어를 쓰세요';
@@ -824,44 +856,44 @@ function submitSA(){const inp=$('#saInput');if(!inp||inp.dataset.done)return nex
   correctAns=others.length?`${w[3]} (동의어 인정: ${others.join(', ')})`:w[3];}
  const fb=$('#saFb');fb.style.color=ok?'var(--green)':'var(--red)';
  fb.textContent=ok?`✓ 정답! (유사도 ${score}%)`:`✗ 오답 (유사도 ${score}%)`;
- $('#saAns').innerHTML=`<div class="sa-answer">정답: <b>${correctAns}</b>${ok?' · Enter를 누르면 다음 문제':' · 5초 동안 정답을 확인합니다'}</div>`;
+ $('#saAns').innerHTML=`<div class="sa-answer">정답: <b>${correctAns}</b>${ok?' · Enter를 누르면 다음 문제':' · 붉은 정답을 3초 확인합니다'}</div>`;
  const btn=$('#saSubmit');gradeAnswer(w,ok,btn);
  if(ok){btn.textContent='다음 → (Enter)';btn.onclick=nextQ;btn.focus();document.addEventListener('keydown',saEnterHandler);}
  else{btn.textContent='정답 확인 중';btn.disabled=true;showWrongReveal(w,dir,nextQ);}
 }
 function gradeAnswer(w,ok,btn){if(!S.seen[w[0]])S.seen[w[0]]=true;const phase=SESS.phase||'main';
- if(ok){SESS.correct++;SESS.combo++;SESS.maxCombo=Math.max(SESS.maxCombo,SESS.combo);S.mastered[w[0]]=(S.mastered[w[0]]||0)+1;const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={});m.lastCorrectDate=today();
-  if(phase==='scheduled'&&S.wrong[w[0]]){m.lastReviewedDate=today();m.reviewCount=(m.reviewCount||0)+1;resolveWrong(w[0],'scheduled-review');}
+ if(ok){SESS.correct++;SESS.combo++;SESS.maxCombo=Math.max(SESS.maxCombo,SESS.combo);S.mastered[w[0]]=(S.mastered[w[0]]||0)+1;const m=ensureWrongMeta(w);m.lastCorrectDate=today();
+  if(phase==='scheduled'&&S.wrong[w[0]]){const stage=m.reviewStage;routeScheduledCorrect(w,m);logWrongEvent(w,'review-correct',stage,reviewStageLabel(stage));}
   else if(phase==='manual'&&S.mastered[w[0]]>=2&&S.wrong[w[0]]){resolveWrong(w[0],'manual-test');}
-  else if(phase==='retry'&&S.wrong[w[0]]){m.lastRetryCorrectDate=today();logWrongEvent(w,'retry-correct',phase,'3일 후 복습 유지');}
+  else if(phase==='retry'&&S.wrong[w[0]]){m.lastRetryCorrectDate=today();logWrongEvent(w,'retry-correct',phase,'D+1 예약 유지');}
   const gain=10+Math.min(15,(SESS.combo-1)*3);SESS.gained+=gain;const r=btn.getBoundingClientRect();addXP(gain,r.right-40,r.top);if(SESS.combo>=3)confetti(r.left+r.width/2,r.top,40);
- }else{SESS.combo=0;S.mastered[w[0]]=0;S.wrong[w[0]]=(S.wrong[w[0]]||0)+1;if(!SESS.wrongThis.some(x=>x[0]===w[0]))SESS.wrongThis.push(w);const m=S.wrongMeta[w[0]]||(S.wrongMeta[w[0]]={firstWrongDate:today(),reviewCount:0,totalWrongCount:0});m.firstWrongDate=m.firstWrongDate||today();m.lastWrongDate=today();m.nextReviewDate=datePlus(today(),3);m.sourceDay=w[1];m.active=true;m.lastPhase=phase;m.totalWrongCount=(m.totalWrongCount||0)+1;if(phase==='scheduled')m.reviewCount=(m.reviewCount||0)+1;logWrongEvent(w,'wrong',phase);}
+ }else{SESS.combo=0;S.mastered[w[0]]=0;S.wrong[w[0]]=(S.wrong[w[0]]||0)+1;if(!SESS.wrongThis.some(x=>x[0]===w[0]))SESS.wrongThis.push(w);const m=ensureWrongMeta(w);m.lastWrongDate=today();m.sourceDay=w[1];m.active=true;m.lastPhase=phase;m.totalWrongCount=(m.totalWrongCount||0)+1;let note='D+1 예약';if(phase==='scheduled'){const stage=routeScheduledWrong(w,m);note=`${reviewStageLabel(stage)} 재오답 → ${reviewStageLabel(m.reviewStage)}`;}else scheduleInitialD1(w);logWrongEvent(w,'wrong',phase,note);}
  save();renderSidebar();
 }
 function nextQ(){if(SESS&&SESS.blocked)return;if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);}if(SESS.i===SESS.qs.length-1){finishQuiz();return;}SESS.i++;SESS.mode==='sa'?renderSA():renderMC();}
 function exitQuiz(){clearWrongReveal();unbindKeys();if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);saEnterHandler=null;}go('Home');}
 function persistQuizResult(result){S.quizStat.done+=result.total;S.quizStat.correct+=result.correct;markDaily('quizzed');const t=today();S.daily[t].correct=(S.daily[t].correct||0)+result.correct;
- if(result.day&&result.phase==='main'){S.dayDone[result.day]=true;S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].quizzes++;S.dayLog[result.day].bestPct=Math.max(S.dayLog[result.day].bestPct||0,result.pct);S.dayLog[result.day].lastStudied=today();}
+ if(result.day&&result.phase==='main'){S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].quizzes++;S.dayLog[result.day].bestPct=Math.max(S.dayLog[result.day].bestPct||0,result.pct);S.dayLog[result.day].lastStudied=today();}
  if(result.day&&result.phase==='retry'){S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].retests=(S.dayLog[result.day].retests||0)+1;}
- const type=result.phase==='scheduled'?'3일 오답 복습':result.phase==='retry'?'즉시 오답 재시험':result.phase==='manual'?'오답 집중시험':result.mode==='sa'?'주관식':'객관식';
+ const type=result.phase==='scheduled'?'D+1·D+3·D+6 예약 복습':result.phase==='retry'?'즉시 오답 재시험':result.phase==='manual'?'오답 집중시험':result.mode==='sa'?'주관식':'객관식';
  S.history.unshift({date:new Date().toISOString(),type,day:result.day||result.originDay||0,correct:result.correct,total:result.total,xp:result.gained});if(S.history.length>200)S.history.length=200;
  recordQuizSession(result.day||result.originDay||0,type,result.correct,result.total,result.startMs);save();
 }
 function resultObject(){const {qs,day,originDay,correct,maxCombo,wrongThis,gained,mode,startMs,phase,resumeDay,mainResult}=SESS;return{day,originDay,correct,maxCombo,wrongThis:uniqueWords(wrongThis),gained,mode,startMs,phase:phase||'main',resumeDay,mainResult,total:qs.length,pct:qs.length?Math.round(correct/qs.length*100):0};}
 function finishQuiz(){clearWrongReveal();unbindKeys();if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);saEnterHandler=null;}const result=resultObject();persistQuizResult(result);if(result.pct>=70)confetti(innerWidth/2,innerHeight*.35,120);
- if(result.phase==='scheduled'){stage('vQuiz',`<div class="result"><div class="em">🔁</div><div class="score">3일 오답 복습 완료</div><div class="pct grad-txt">${result.pct}%</div><div class="mini" style="margin:12px 0 22px">이제 DAY ${result.resumeDay} 본 수업을 시작합니다.</div><button class="btn btn-hero wfull" onclick="startTodayQuiz(${result.resumeDay})">본 수업 시작</button></div>`);setTimeout(()=>{if(SESS&&SESS.phase==='scheduled')startTodayQuiz(result.resumeDay);},1600);return;}
+ if(result.phase==='scheduled'){stage('vQuiz',`<div class="result"><div class="em">🔁</div><div class="score">예약 오답 복습 완료</div><div class="pct grad-txt">${result.pct}%</div><div class="mini" style="margin:12px 0 22px">이제 DAY ${result.resumeDay} 본 수업을 시작합니다.</div><button class="btn btn-hero wfull" onclick="startTodayQuiz(${result.resumeDay})">본 수업 시작</button></div>`);setTimeout(()=>{if(SESS&&SESS.phase==='scheduled')startTodayQuiz(result.resumeDay);},1600);return;}
  if(result.phase==='main'&&result.wrongThis.length){stage('vQuiz',`<div class="result"><div class="em">🔄</div><div class="score">오답 ${result.wrongThis.length}개 재시험</div><div class="mini" style="margin:12px 0 22px">방금 틀린 단어만 퀴즈로 한 번 더 확인합니다.</div><button class="btn btn-hero wfull" onclick="startImmediateRetry(window.__retryWords,${result.day},'${result.mode}',window.__mainResult)">오답 재시험 시작</button></div>`);window.__retryWords=result.wrongThis;window.__mainResult=result;setTimeout(()=>{if(SESS&&SESS.phase==='main')startImmediateRetry(result.wrongThis,result.day,result.mode,result);},1600);return;}
  if(result.phase==='retry'){renderDayFinal(result.mainResult,result);return;}
  if(result.phase==='main'){renderDayFinal(result,null);return;}
  renderSimpleResult(result);
 }
 function renderSimpleResult(result){const em=result.pct>=90?'🏆':result.pct>=70?'🎯':result.pct>=50?'💪':'📚';stage('vQuiz',`<div class="result"><div class="em">${em}</div><div class="pct grad-txt">${result.pct}%</div><div class="score"><span class="num">${result.correct}</span> / <span class="num">${result.total}</span> 정답</div><div style="margin:18px 0"><span class="chip lime">+${result.gained} XP</span></div><button class="btn btn-hero wfull" onclick="go('Home')">홈으로</button></div>`);}
-let pendingCompletion=null;
-function renderDayFinal(main,retry){const remaining=retry?retry.wrongThis.length:0;const mainWrong=main.wrongThis.length;const retryText=retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음';
- stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">DAY ${main.day} 학습 종료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="mail-note">종료 전 관리자에게 DAY별 진행내역과 테스트 결과를 전송합니다.</div></div>`);
- showCompletionGate({day:main.day,main,retry});
-}
-function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;return `[2000_18DAY · DAY ${p.day} 종료 보고]
+function isDayLearningComplete(day){const dp=dayProgress(day);return dp.total>0&&dp.seen>=dp.total;}
+let pendingCompletion=S.pendingCompletion||null;
+function renderDayFinal(main,retry){const remaining=retry?retry.wrongThis.length:0;const retryText=retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음';stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">DAY ${main.day} 학습 종료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="mail-note"><b>관리자 보고 전송이 완료되어야 DAY가 최종 완료됩니다.</b></div></div>`);showCompletionGate({day:main.day,main,retry,status:'ready',createdAt:new Date().toISOString()},{autoSend:true});}
+function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;
+ p={...p,main:{total:0,correct:0,pct:0,wrongThis:[],...(p.main||{})}};
+ if(!Array.isArray(p.main.wrongThis))p.main.wrongThis=[];return `[2000_18DAY · DAY ${p.day} 종료 보고]
 보고 시각: ${new Date().toLocaleString('ko-KR')}
 학습 진도: ${dp.seen}/${dp.total} (${Math.round(dp.seen/dp.total*100)}%)
 본 시험: ${p.main.correct}/${p.main.total} (${p.main.pct}%)
@@ -872,19 +904,61 @@ DAY 누적 오답 발생: ${dayCumulativeWrongCount(p.day)}회
 전체 활성 오답: ${wrongList().length}개
 전체 누적 오답 발생: ${cumulativeWrongCount()}회
 정복한 오답 단어: ${conqueredWrongCount()}개
-오늘 3일 복습 대상: ${dueWrongList().length}개
+오늘 D+1·D+3·D+6 복습 대상: ${dueWrongList().length}개
 누적 진도: ${seenCount()}/${TOTAL}
-누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`}
-function showCompletionGate(payload){pendingCompletion=payload;const retry=payload.retry;const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom"><div class="completion-gate-title">관리자 보고 전송</div><div class="mini" style="text-align:center;margin-top:6px">DAY ${payload.day} 종료 단계 · ${ADMIN_EMAIL}</div>
- <div class="completion-summary"><div><span class="mini">본 시험</span><b>${payload.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(payload.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div>
- <div class="mail-status" id="completionMailStatus">메일 전송을 준비하고 있습니다.</div><button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()">📧 관리자에게 전송</button>
- <button class="btn btn-ghost wfull" style="margin-top:10px" id="completionFallbackBtn" onclick="openCompletionMailApp()">메일 앱으로 직접 보내기</button><button class="btn btn-lime wfull" style="margin-top:10px;display:none" id="completionDoneBtn" onclick="closeCompletionGate()">전송 완료 · 홈으로</button></div>`);document.body.appendChild(gate);setTimeout(sendCompletionMail,350);}
-function completionPayload(p){const pct=Math.round(seenCount()/TOTAL*100),tot=S.quizStat.done,accur=tot?Math.round(S.quizStat.correct/tot*100):0,L=levelInfo(),text=completionReportText(p);return{to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:text,day:p.day,day_report:text,report_text:text,message:text};}
-function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!st||!btn)return;btn.disabled=true;st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';if(!emailJSReady)initEmailJS();if(!window.emailjs||!emailJSReady){btn.disabled=false;st.className='mail-status err';st.textContent='EmailJS를 불러오지 못했습니다. 네트워크를 확인하거나 메일 앱 전송을 사용하세요.';return;}
- emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,completionPayload(pendingCompletion)).then(()=>{const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:'emailjs'});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;save();st.className='mail-status ok';st.textContent=`전송 완료: ${ADMIN_EMAIL}`;btn.style.display='none';$('#completionFallbackBtn').style.display='none';$('#completionDoneBtn').style.display='inline-flex';}).catch(e=>{console.error(e);btn.disabled=false;st.className='mail-status err';st.textContent='자동 전송에 실패했습니다. 다시 시도하거나 메일 앱으로 직접 보내세요.';});}
-function openCompletionMailApp(){if(!pendingCompletion)return;const subject=encodeURIComponent(`[2000_18DAY] DAY ${pendingCompletion.day} 학습·테스트 보고`),body=encodeURIComponent(completionReportText(pendingCompletion));location.href=`mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;const st=$('#completionMailStatus');st.className='mail-status';st.textContent='메일 앱이 열렸습니다. 전송을 완료한 뒤 아래 버튼을 누르세요.';const done=$('#completionDoneBtn');done.style.display='inline-flex';done.textContent='메일 앱 전송 완료 · 홈으로';done.onclick=()=>{const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:'mailto-confirmed'});save();closeCompletionGate();};}
-function closeCompletionGate(){const g=document.querySelector('.completion-gate');if(g)g.remove();pendingCompletion=null;syncScheduleState();go('Home');}
+누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`;}
+function completionPayload(p){const pct=Math.round(seenCount()/TOTAL*100),tot=S.quizStat.done,accur=tot?Math.round(S.quizStat.correct/tot*100):0,L=levelInfo(),text=completionReportText(p);return{report_id:`wm2000-day${p.day}-${p.createdAt||new Date().toISOString()}`,email:ADMIN_EMAIL,to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:text,day:p.day,day_report:text,report_text:text,message:text,summary:{words:p.main.total,accuracy:p.main.pct,wrong:p.main.wrongThis.length,active_wrong:wrongList().length,cumulative_wrong:cumulativeWrongCount()}};}
+function showCompletionGate(payload,options={}){if(!payload||!isDayLearningComplete(payload.day)){toast('DAY 전체 단어 학습 후 관리자 보고를 전송할 수 있습니다.');return;}const existing=document.querySelector('.completion-gate');if(existing)existing.remove();pendingCompletion=normalizeCompletionPayload(payload)||normalizeCompletionPayload({...payload,main:obj(payload.main)?payload.main:{total:0,correct:0,pct:0,wrongThis:[]}});S.pendingCompletion=pendingCompletion;save();const retry=pendingCompletion.retry,status=pendingCompletion.status||'ready';const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom" role="dialog" aria-modal="true"><div class="completion-gate-title">DAY ${pendingCompletion.day} 종료 보고</div><div class="completion-required">관리자 보고서 이메일 전송 필수</div><div class="completion-incomplete">${status==='sent'?'전송 확인 완료':'현재 DAY는 아직 미완료입니다'}</div><div class="completion-lock">전송 성공 전에는 다음 DAY 이동과 완료 확정이 잠깁니다.<br>${ADMIN_EMAIL}</div><div class="completion-summary"><div><span class="mini">본 시험</span><b>${pendingCompletion.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(pendingCompletion.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div><div class="mail-status ${status==='sent'?'ok':status==='error'?'err':''}" id="completionMailStatus">${status==='sent'?`전송 완료: ${ADMIN_EMAIL}`:status==='error'?(pendingCompletion.error||'전송에 실패했습니다. 다시 시도하세요.'):'관리자 보고서 전송을 준비했습니다.'}</div><button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()" ${status==='sent'?'style="display:none"':''}>📧 관리자에게 전송하고 DAY 완료</button><button class="btn btn-lime wfull" style="margin-top:10px;${status==='sent'?'display:inline-flex':'display:none'}" id="completionDoneBtn" onclick="closeCompletionGate()">전송 확인 완료 · 홈으로</button><div id="completionFallback" class="completion-fallback" style="display:none"><div class="mini" style="margin-bottom:10px;line-height:1.6">전송이 두 번 이상 실패했습니다. 오늘 학습 기록은 이미 안전하게 저장되어 있습니다.<br><b style="color:var(--amber)">아래 완료 기능은 선생님(관리자)용입니다. 학생 혼자 DAY를 완료할 수는 없습니다.</b></div><button class="btn btn-ghost wfull" type="button" onclick="openMailAppFallback()">메일 앱으로 보고서 보내기</button><button class="btn btn-ghost wfull" type="button" style="margin-top:8px" onclick="requestOfflineCompletion()">🔒 관리자 승인 후 오프라인 완료 · 연결되면 자동 재전송</button><div id="offlinePinBox" style="display:none;margin-top:10px"><input type="password" inputmode="numeric" maxlength="4" id="offlinePinInput" class="num-input" style="width:100%;text-align:center;letter-spacing:8px;font-size:22px" placeholder="관리자 PIN" aria-label="관리자 PIN 4자리"><div id="offlinePinError" class="mini" style="color:var(--red);min-height:20px;margin-top:6px"></div><button class="btn btn-hero wfull" type="button" onclick="confirmOfflineCompletion()">승인하고 DAY 완료</button></div></div></div>`);document.body.appendChild(gate);updateCompletionFallback();if(options.autoSend&&status!=='sent')setTimeout(sendCompletionMail,350);}
+async function sendDayReportTransport(payload){let lastError=null;try{const response=await fetch('/.netlify/functions/send-day-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(response.ok){const body=await response.json().catch(()=>({ok:true}));if(body.ok!==false)return{method:'netlify'};throw new Error(body.reason||'Netlify 전송 실패');}throw new Error(`Netlify ${response.status}`);}catch(e){lastError=e;}if(!emailJSReady)initEmailJS();if(window.emailjs&&emailJSReady){try{await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,payload);return{method:'emailjs'};}catch(e){lastError=e;}}throw lastError||new Error('사용 가능한 메일 전송 경로가 없습니다.');}
+async function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!isDayLearningComplete(pendingCompletion.day)){S.dayDone[pendingCompletion.day]=false;pendingCompletion.status='error';pendingCompletion.error='DAY 전체 단어 학습이 완료되지 않아 보고를 전송할 수 없습니다.';S.pendingCompletion=pendingCompletion;save();if(st){st.className='mail-status err';st.textContent=pendingCompletion.error;}if(btn)btn.disabled=false;return;}if(!st||!btn)return;btn.disabled=true;pendingCompletion.status='sending';pendingCompletion.error='';S.pendingCompletion=pendingCompletion;save();st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';try{const sent=await sendDayReportTransport(completionPayload(pendingCompletion));const now=new Date().toISOString();S.mailLog.unshift({date:now,day:pendingCompletion.day,method:sent.method});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;S.dayLog[pendingCompletion.day].mailConfirmedAt=now;S.dayDone[pendingCompletion.day]=true;pendingCompletion.status='sent';pendingCompletion.sentAt=now;S.pendingCompletion=pendingCompletion;save();st.className='mail-status ok';st.textContent=`전송 완료: ${ADMIN_EMAIL}`;btn.style.display='none';$('#completionDoneBtn').style.display='inline-flex';renderSidebar();}catch(e){console.error(e);pendingCompletion.status='error';pendingCompletion.error='자동 전송에 실패했습니다. 네트워크와 메일 설정을 확인한 뒤 다시 시도하세요.';pendingCompletion.failCount=(+pendingCompletion.failCount||0)+1;S.pendingCompletion=pendingCompletion;S.dayDone[pendingCompletion.day]=false;save();btn.disabled=false;st.className='mail-status err';st.textContent=pendingCompletion.error;updateCompletionFallback();}}
 
+/* ===== 대체 전송 경로 (2회 실패 또는 오프라인 시 노출) ===== */
+function mailFallbackUnlocked(){return !!(pendingCompletion&&((+pendingCompletion.failCount||0)>=2||navigator.onLine===false));}
+function updateCompletionFallback(){const box=$('#completionFallback');if(!box)return;
+ box.style.display=(mailFallbackUnlocked()&&(!pendingCompletion||pendingCompletion.status!=='sent'))?'block':'none';}
+function openMailAppFallback(){if(!pendingCompletion)return;
+ const subject=encodeURIComponent(`[2000_18DAY] DAY ${pendingCompletion.day} 학습 보고`);
+ const body=encodeURIComponent(completionReportText(pendingCompletion));
+ window.location.href=`mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`;
+ const st=$('#completionMailStatus');if(st){st.className='mail-status';st.textContent='메일 앱을 열었습니다. 전송을 마친 뒤 아래 DAY 완료 버튼을 누르세요.';}}
+/* 오프라인 완료는 학생 단독 실행 불가 — 관리자 PIN 인증 필요 */
+function requestOfflineCompletion(){const box=$('#offlinePinBox');if(!box)return;
+ box.style.display='block';const inp=$('#offlinePinInput');if(inp){inp.value='';inp.focus();
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();confirmOfflineCompletion();}};}
+ const err=$('#offlinePinError');if(err)err.textContent='';}
+function confirmOfflineCompletion(){const inp=$('#offlinePinInput'),err=$('#offlinePinError');
+ const v=(inp&&inp.value||'').trim();
+ if(v.length!==4||pinHash(v)!==PW_ADMIN_FNV32){if(err)err.textContent='관리자 PIN이 올바르지 않습니다.';if(inp)inp.select();return;}
+ if(err)err.textContent='';completeDayOffline();}
+function completeDayOffline(){if(!pendingCompletion)return;
+ const day=pendingCompletion.day;
+ if(!isDayLearningComplete(day)){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='DAY 전체 단어 학습이 완료되지 않아 완료할 수 없습니다.';}return;}
+ const now=new Date().toISOString();
+ S.pendingReports=Array.isArray(S.pendingReports)?S.pendingReports:[];
+ const payload=completionPayload(pendingCompletion);
+ if(!S.pendingReports.some(r=>r.report_id===payload.report_id))S.pendingReports.push(payload);
+ S.dayLog[day]=S.dayLog[day]||{};S.dayLog[day].offlineCompletedAt=now;S.dayLog[day].mailPending=true;S.dayLog[day].offlineApprovedBy='admin-pin';
+ S.dayDone[day]=true;
+ pendingCompletion.status='queued';pendingCompletion.queuedAt=now;
+ S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();
+ const g=document.querySelector('.completion-gate');if(g)g.remove();
+ toast('DAY를 완료했습니다. 보고서는 연결되면 자동 전송됩니다.');
+ go('Home');retryPendingReports();}
+async function retryPendingReports(){
+ if(!Array.isArray(S.pendingReports)||!S.pendingReports.length)return {total:0,success:0};
+ const list=[...S.pendingReports];let ok=0;
+ for(const payload of list){
+  try{const sent=await sendDayReportTransport(payload);const now=new Date().toISOString();
+   const day=+payload.day||0;
+   S.mailLog.unshift({date:now,day,method:sent.method});if(S.mailLog.length>100)S.mailLog.length=100;
+   if(day){S.dayLog[day]=S.dayLog[day]||{};S.dayLog[day].lastMailAt=now;S.dayLog[day].mailConfirmedAt=now;S.dayLog[day].mailPending=false;S.dayDone[day]=true;}
+   S.pendingReports=S.pendingReports.filter(r=>r.report_id!==payload.report_id);ok++;
+  }catch(e){break;}
+ }
+ if(ok){save();renderSidebar();}
+ return {total:list.length,success:ok};}
+function closeCompletionGate(){if(!pendingCompletion||(pendingCompletion.status!=='sent'&&pendingCompletion.status!=='queued')){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='관리자 이메일 전송 성공 전에는 완료할 수 없습니다.';}return;}const g=document.querySelector('.completion-gate');if(g)g.remove();S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();go('Home');}
+function restorePendingCompletionGate(){if(!S.pendingCompletion)return;pendingCompletion=normalizeCompletionPayload(S.pendingCompletion);S.pendingCompletion=pendingCompletion;showCompletionGate(pendingCompletion,{autoSend:false});}
 let keyHandler=null;
 function bindKeys(){unbindKeys();keyHandler=e=>{const o=$('#opts');if(!o||o.dataset.lock||(SESS&&SESS.blocked))return;const n=parseInt(e.key);if(n>=1&&n<=4){const b=o.querySelectorAll('.opt')[n-1];if(b)b.click();}};document.addEventListener('keydown',keyHandler);}
 function unbindKeys(){if(keyHandler){document.removeEventListener('keydown',keyHandler);keyHandler=null;}}
@@ -936,7 +1010,7 @@ function renderConfig(){const c=S.config;
      <input type="range" class="slider" min="0" max="100" step="10" value="${c.enPct}" oninput="setRatio(this.value)">
      <div style="display:flex;justify-content:space-between" class="mini"><span>전부 한→영</span><span>반반</span><span>전부 영→한</span></div>
      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:12px;font-size:13px;color:var(--txt2);line-height:1.7">
-       ${c.quizCount>0?`예시: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b>`:`전체 출제 시 DAY별 단어 수(111~112개)를 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}${c.quizCount>0?`<div class="mini" style="margin-top:8px;color:var(--amber)">※ 문제 수를 직접지정하면 그날 단어 중 일부만 출제되어 학습률(%)이 100%에 도달하지 않습니다. 본 시험을 1회 마치면 DAY는 완료로 처리됩니다.</div>`:''}</div>
+       ${c.quizCount>0?`예시: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b>`:`전체 출제 시 DAY별 단어 수(111~112개)를 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}</div>
    </div>
   </div>
   <div class="card" style="margin-top:18px">
@@ -1031,7 +1105,7 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
     <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>활성 오답</th><th>누적 오답</th><th>상태</th><th>출력</th></tr></thead>
     <tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1;const dp=dayProgress(d);const lg=S.dayLog[d]||{};const p=Math.round(dp.seen/dp.total*100);
       const wrongN=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
-      const st=dp.seen===dp.total?'<span class="chip green">완료</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
+      const st=S.dayDone[d]?'<span class="chip green">완료·보고됨</span>':(S.pendingCompletion&&S.pendingCompletion.day===d)?'<span class="chip amber">보고 대기</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
       return `<tr><td class="num" style="font-weight:700">DAY ${d}</td><td class="num">${dp.seen}/${dp.total}</td>
         <td><div class="bar-cell"><div class="track"><i style="width:${p}%"></i></div><span class="num" style="color:var(--txt2);font-size:12px">${p}%</span></div></td>
         <td class="num">${lg.quizzes||0}회</td><td class="num">${lg.bestPct?lg.bestPct+'%':'-'}</td>
@@ -1061,7 +1135,7 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
 
 /* ===== 리포트/이메일/내보내기 ===== */
 function reportSummary(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const doneDays=[];for(let d=1;d<=DAYS;d++)if(dayProgress(d).seen===dayProgress(d).total)doneDays.push(d);
+ const doneDays=[];for(let d=1;d<=DAYS;d++)if(S.dayDone[d])doneDays.push(d);
  return `[2000_18DAY 누적 학습 리포트]
 생성일: ${new Date().toLocaleString('ko-KR')}
 ─────────────────────────
@@ -1072,7 +1146,7 @@ function reportSummary(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=
 ■ 활성 오답 단어: ${wrongList().length}
 ■ 누적 오답 발생: ${cumulativeWrongCount()}회
 ■ 정복한 오답 단어: ${conqueredWrongCount()}
-■ 오늘 3일 복습 대상: ${dueWrongList().length}
+■ 오늘 D+1·D+3·D+6 복습 대상: ${dueWrongList().length}
 ■ 연속 학습: ${S.streak}일
 ■ 레벨: Lv.${L.lv} ${L.name}
 ■ 시험 응시: ${S.sessions.length}회
@@ -1087,7 +1161,7 @@ function mailReport(){if(!emailJSReady){toast('메일 준비 중, 잠시 후 다
 }
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);toast('내려받기');}
 function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','활성오답수','누적오답횟수','상태']];
- for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dayCumulativeWrongCount(d),dp.seen===dp.total?'완료':dp.seen?'진행':'미시작']);}
+ for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dayCumulativeWrongCount(d),S.dayDone[d]?'완료·보고됨':(S.pendingCompletion&&S.pendingCompletion.day===d)?'보고 대기':dp.seen?'진행':'미시작']);}
  dl(`2000_18DAY_DAY별_${today()}.csv`,'\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'text/csv;charset=utf-8');}
 function downloadLogsCSV(){let rows=[['접속시각','DAY','유형','소요시간(초)','정답','총문항','정답률(%)']];S.sessions.forEach(s=>{rows.push([fmtFull(s.login),s.day||'오답',s.type,s.dur,s.correct,s.total,s.total?Math.round(s.correct/s.total*100):0]);});dl(`2000_18DAY_시험기록_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
 function downloadWrongHistoryCSV(){let rows=[['일시','단어ID','단어','DAY','이벤트','단계','활성오답횟수','누적오답횟수','비고']];(S.wrongHistory||[]).forEach(x=>rows.push([x.date?new Date(x.date).toLocaleString('ko-KR'):'',x.id||'',x.word||'',x.day||'',x.event||'',x.phase||'',x.activeCount||0,x.totalWrongCount||0,x.note||'']));dl(`2000_18DAY_오답이력_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
@@ -1096,7 +1170,7 @@ function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileR
 
 /* ===== global keyboard ===== */
 document.addEventListener('keydown',e=>{
- if(document.querySelector('.wrong-reveal')||document.querySelector('.completion-gate'))return;
+ if(document.querySelector('.wrong-reveal')||document.querySelector('.completion-gate')||(SESS&&SESS.blocked))return;
  if($('#loginScreen').style.display!=='none'){if(/[0-9]/.test(e.key))pinPress(e.key);else if(e.key==='Backspace')pinPress('del');return;}
  if(cur==='Study'&&$('#flash')){if(e.code==='Space'){e.preventDefault();flip();}else if(e.key==='ArrowRight'){e.preventDefault();fNext(null);}else if(e.key==='ArrowLeft'){e.preventDefault();fPrev();}}
 });
@@ -1104,8 +1178,9 @@ document.addEventListener('keydown',e=>{
 /* ===== init ===== */
 syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);
 window.addEventListener('pagehide',()=>save());
-window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();});
-window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();}}catch(err){}}});
+window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
+window.addEventListener('pageshow',()=>{if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
+window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;pendingCompletion=S.pendingCompletion||null;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}}catch(err){}}});
 buildKeypad();
 </script>
 </body>
