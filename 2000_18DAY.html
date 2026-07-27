@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>2000_18DAY CLOUD V9</title>
+<title>2000_18DAY CLOUD V10.1 HUB</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -430,6 +430,19 @@ const CLOUD_STUDENT_PASSWORD='voca8081';
 const CLOUD_ROOT_PATH='singleStudent/8081/apps';
 
 const CLOUD_2000_PATH=CLOUD_ROOT_PATH+'/voca2000';
+
+const HUB_SESSION_KEY='vocaHubSessionV1';
+const HUB_SESSION_MAX_AGE_MS=12*60*60*1000;
+function validHubLearnerSession2000(){
+  try{
+    const params=new URLSearchParams(globalThis.location.search);
+    if(params.get('hub')!=='1'||globalThis.parent===globalThis)return false;
+    const raw=sessionStorage.getItem(HUB_SESSION_KEY);if(!raw)return false;
+    const s=JSON.parse(raw),now=Date.now();
+    return s&&s.student==='8081'&&s.role==='learner'&&s.origin===globalThis.location.origin&&Number(s.issuedAt)>0&&now-Number(s.issuedAt)<=HUB_SESSION_MAX_AGE_MS&&Number(s.expiresAt)>now;
+  }catch(_error){return false;}
+}
+
 const cloud2000={ready:false,app:null,auth:null,db:null,ref:null,timer:null,lastWriteAt:0,lastWriteId:'',applying:false,writing:false,pending:false};
 function cloudDeviceId2000(){let id=localStorage.getItem('voca2000CloudDeviceId');if(!id){id='v2k-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);localStorage.setItem('voca2000CloudDeviceId',id);}return id;}
 function setCloudStatus2000(text,mode='wait'){
@@ -459,15 +472,15 @@ function cloudEnvelope2000(state,writeId){return{app:'voca2000',student:'8081',s
 function applyCloudState2000(next,message){cloud2000.applying=true;try{const merged=mergeVocaStates2000(S,next);const prev=localStorage.getItem(KEY);if(prev)localStorage.setItem(SNAPSHOT_KEY,prev);S=normalizeState(merged);localStorage.setItem(KEY,JSON.stringify(S));syncScheduleState();if(ROLE){renderSidebar();if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}if(message)toast(message);}finally{cloud2000.applying=false;}}
 function scheduleCloudSave2000(force=false){if(cloud2000.applying)return;if(!cloud2000.ready||!cloud2000.ref){cloud2000.pending=true;return;}cloud2000.pending=false;clearTimeout(cloud2000.timer);const elapsed=Date.now()-cloud2000.lastWriteAt;const delay=force?100:Math.max(1800,12000-elapsed);cloud2000.timer=setTimeout(writeCloud2000,delay);}
 async function writeCloud2000(){if(!cloud2000.ready||cloud2000.writing||!cloud2000.ref)return;cloud2000.writing=true;const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;setCloudStatus2000('☁ 진도 저장 중','wait');try{await cloud2000.ref.transaction(current=>{const remote=current&&current.state?current.state:null;return cloudEnvelope2000(remote?mergeVocaStates2000(localSnapshot,remote):localSnapshot,writeId);});cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 클라우드 진도 저장됨','ok');}catch(e){console.warn('클라우드 저장 실패',e);cloud2000.pending=true;setCloudStatus2000('로컬 저장 · 연결 시 재동기화','local');}finally{cloud2000.writing=false;}}
-async function initCloudSync2000(){setCloudStatus2000('☁ 클라우드 진도 연결 중','wait');if(!window.firebase){setCloudStatus2000('클라우드 모듈 차단 · 로컬 저장','local');return false;}try{cloud2000.app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);cloud2000.auth=firebase.auth();cloud2000.db=firebase.database();await cloud2000.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);if(!cloud2000.auth.currentUser)await cloud2000.auth.signInWithEmailAndPassword(CLOUD_STUDENT_EMAIL,CLOUD_STUDENT_PASSWORD);cloud2000.ref=cloud2000.db.ref(CLOUD_2000_PATH);const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-boot-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;const result=await cloud2000.ref.transaction(current=>cloudEnvelope2000(current&&current.state?mergeVocaStates2000(localSnapshot,current.state):localSnapshot,writeId));const payload=result.snapshot.val();if(payload&&payload.state)applyCloudState2000(payload.state,'클라우드 누적 진도를 불러왔습니다');cloud2000.ready=true;cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 모든 기기 진도 동기화','ok');cloud2000.ref.on('value',snap=>{const p=snap.val();if(!p||!p.state||p.writeId===cloud2000.lastWriteId||cloud2000.writing)return;applyCloudState2000(p.state,'다른 기기의 최신 진도를 반영했습니다');setCloudStatus2000('✓ 최신 진도 반영됨','ok');});if(cloud2000.pending)scheduleCloudSave2000(true);return true;}catch(e){console.error('Firebase 진도 연결 실패',e);setCloudStatus2000('클라우드 인증 확인 필요 · 로컬 저장','error');return false;}}
-window.addEventListener('online',()=>{if(cloud2000.ready)scheduleCloudSave2000(true);else initCloudSync2000();});
+async function initCloudSync2000(){setCloudStatus2000('☁ 클라우드 진도 연결 중','wait');if(!window.firebase){setCloudStatus2000('클라우드 모듈 차단 · 로컬 저장','local');return false;}try{cloud2000.app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);cloud2000.auth=firebase.auth();cloud2000.db=firebase.database();await cloud2000.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);if(cloud2000.auth.currentUser&&cloud2000.auth.currentUser.email!==CLOUD_STUDENT_EMAIL)await cloud2000.auth.signOut();if(!cloud2000.auth.currentUser)await cloud2000.auth.signInWithEmailAndPassword(CLOUD_STUDENT_EMAIL,CLOUD_STUDENT_PASSWORD);cloud2000.ref=cloud2000.db.ref(CLOUD_2000_PATH);const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-boot-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;const result=await cloud2000.ref.transaction(current=>cloudEnvelope2000(current&&current.state?mergeVocaStates2000(localSnapshot,current.state):localSnapshot,writeId));const payload=result.snapshot.val();if(payload&&payload.state)applyCloudState2000(payload.state,'클라우드 누적 진도를 불러왔습니다');cloud2000.ready=true;cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 모든 기기 진도 동기화','ok');cloud2000.ref.on('value',snap=>{const p=snap.val();if(!p||!p.state||p.writeId===cloud2000.lastWriteId||cloud2000.writing)return;applyCloudState2000(p.state,'다른 기기의 최신 진도를 반영했습니다');setCloudStatus2000('✓ 최신 진도 반영됨','ok');});if(cloud2000.pending)scheduleCloudSave2000(true);return true;}catch(e){console.error('Firebase 진도 연결 실패',e);setCloudStatus2000('클라우드 인증 확인 필요 · 로컬 저장','error');return false;}}
+window.addEventListener('online',()=>{if(cloud2000.ready)scheduleCloudSave2000(true);else if(ROLE)initCloudSync2000();});
 
 
 /* ===== state ===== */
 // 저장 키는 구버전과 동일하게 유지한다. 키를 바꾸면 기존 누적 학습·오답 데이터가 끊어진다.
 const KEY='wm2000_v3';
 const SNAPSHOT_KEY='wm2000_v3_snapshot';
-const APP_DATA_VERSION=9;
+const APP_DATA_VERSION=10;
 const APP_TITLE='2000_18DAY';
 const WRONG_PRIMARY_HOLD_MS=3000;
 const COGNITION_REVEAL_MS=4000;
@@ -632,15 +645,24 @@ function pinPress(k){if(k==='clear'){pinBuf='';}else if(k==='del'){pinBuf=pinBuf
  else if(pinBuf.length<4){pinBuf+=k;}updatePinDots();
  if(pinBuf.length===4)setTimeout(tryLogin,150);}
 function updatePinDots(){document.querySelectorAll('.pin-dot').forEach((d,i)=>{d.classList.remove('err');d.classList.toggle('filled',i<pinBuf.length);});}
-function tryLogin(){
+async function tryLogin(){
  const pinDigest=pinHash(pinBuf);
- if(pinDigest===PW_LEARNER_FNV32){ROLE='learner';enterApp();}
- else if(pinDigest===PW_ADMIN_FNV32){ROLE='admin';enterApp();}
+ if(pinDigest===PW_LEARNER_FNV32){ROLE='learner';await enterApp();}
+ else if(pinDigest===PW_ADMIN_FNV32){ROLE='admin';await enterApp();}
  else{document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('err'));setTimeout(()=>{pinBuf='';updatePinDots();},500);}
 }
-function logout(){ROLE=null;pinBuf='';updatePinDots();$('#shell').classList.add('hidden');$('#loginScreen').style.display='grid';}
-function enterApp(){startSession();$('#loginScreen').style.display='none';$('#shell').classList.remove('hidden');
- buildSidebar();buildTopbar();go('Home');if(ROLE==='learner'&&S.pendingCompletion)setTimeout(restorePendingCompletionGate,80);}
+async function logout(){
+ try{save();if(cloud2000.ready)await writeCloud2000();cloud2000.ref?.off();if(cloud2000.auth?.currentUser)await cloud2000.auth.signOut();}catch(_error){}
+ cloud2000.ready=false;cloud2000.ref=null;ROLE=null;pinBuf='';updatePinDots();$('#shell').classList.add('hidden');$('#loginScreen').style.display='grid';const s=document.getElementById('cloudStatus2000');if(s)s.remove();
+}
+async function enterApp(){
+ const cloudPromise=initCloudSync2000();
+ startSession();$('#loginScreen').style.display='none';$('#shell').classList.remove('hidden');
+ buildSidebar();buildTopbar();go('Home');
+ await Promise.race([cloudPromise,new Promise(resolve=>setTimeout(()=>resolve(false),10000))]);
+ if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();
+ if(ROLE==='learner'&&S.pendingCompletion)setTimeout(restorePendingCompletionGate,80);
+}
 
 /* ===== SIDEBAR (역할별) ===== */
 const NAV_LEARNER=[['Home','대시보드','M3 11l9-8 9 8M5 10v10h14V10'],['Study','학습 (DAY)','rect'],['Quiz','퀴즈','circle'],['Review','오답노트','refresh']];
@@ -1156,12 +1178,16 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ===== init ===== */
-syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);window.addEventListener('load',initCloudSync2000);
+syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);
 window.addEventListener('pagehide',()=>{save();scheduleCloudSave2000(true);});
 window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
 window.addEventListener('pageshow',()=>{if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;pendingCompletion=S.pendingCompletion||null;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}}catch(err){}}});
 buildKeypad();
+if(validHubLearnerSession2000()){
+  ROLE='learner';
+  void enterApp();
+}
 </script>
 </body>
 </html>
