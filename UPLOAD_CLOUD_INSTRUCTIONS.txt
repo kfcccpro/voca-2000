@@ -1,0 +1,6 @@
+Firebase cloud sync deployment package
+1. Upload index.html and the alias HTML to the existing GitHub repository root.
+2. Keep the same GitHub Pages URL.
+3. Do not upload this ZIP itself; extract it first.
+4. Cloud login assumes student8081@root-voca.app / voca8081.
+5. Realtime Database path: singleStudent/8081/apps

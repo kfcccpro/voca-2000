@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>2000_18DAY</title>
+<title>2000_18DAY CLOUD V9</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 :root{
 --bg:#0E1016;--bg2:#151823;--panel:#1B1F2E;--panel2:#222840;
@@ -371,7 +374,7 @@ button{min-height:44px}
   <div class="login-box">
     <div class="login-logo">W</div>
     <div class="login-title">2000_18DAY</div>
-    <div class="login-sub">WORD MASTER 수능 2000 · 18일 완성</div>
+    <div class="login-sub">WORD MASTER 수능 2000 · 18일 완성 · 클라우드 누적관리</div>
     <div class="pin-display" id="pinDisplay"><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span></div>
     <div class="keypad" id="keypad"></div>
     <div class="login-hint">숫자 4자리를 누르면 자동으로 로그인됩니다</div>
@@ -420,11 +423,51 @@ function initEmailJS(){if(window.emailjs){try{emailjs.init(EMAILJS_PUBLIC_KEY);e
 /* ===== 역할 ===== */
 let ROLE=null; // 'learner' | 'admin'
 
+/* ===== Firebase single-student cloud sync ===== */
+const FIREBASE_CONFIG={"apiKey":"AIzaSyCX4ceBT_jMtLymTFQPuDl8IX95Og4bpbc","authDomain":"root-voca.firebaseapp.com","databaseURL":"https://root-voca-default-rtdb.firebaseio.com","projectId":"root-voca","storageBucket":"root-voca.firebasestorage.app","messagingSenderId":"634926576157","appId":"1:634926576157:web:d270e6db27fcbbb5390cf4","measurementId":"G-GWNF739P46"};
+const CLOUD_STUDENT_EMAIL='student8081@root-voca.app';
+const CLOUD_STUDENT_PASSWORD='voca8081';
+const CLOUD_ROOT_PATH='singleStudent/8081/apps';
+
+const CLOUD_2000_PATH=CLOUD_ROOT_PATH+'/voca2000';
+const cloud2000={ready:false,app:null,auth:null,db:null,ref:null,timer:null,lastWriteAt:0,lastWriteId:'',applying:false,writing:false,pending:false};
+function cloudDeviceId2000(){let id=localStorage.getItem('voca2000CloudDeviceId');if(!id){id='v2k-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);localStorage.setItem('voca2000CloudDeviceId',id);}return id;}
+function setCloudStatus2000(text,mode='wait'){
+ let n=document.getElementById('cloudSync2000');if(!n){n=document.createElement('div');n.id='cloudSync2000';n.setAttribute('aria-live','polite');Object.assign(n.style,{position:'fixed',right:'12px',bottom:'12px',zIndex:'340',padding:'8px 12px',borderRadius:'999px',fontSize:'12px',fontWeight:'800',boxShadow:'0 8px 28px rgba(0,0,0,.35)',backdropFilter:'blur(10px)',maxWidth:'calc(100vw - 24px)',whiteSpace:'nowrap'});document.body.appendChild(n);}
+ const palette={ok:['rgba(43,227,138,.16)','#2BE38A','rgba(43,227,138,.45)'],error:['rgba(255,77,109,.16)','#FF6B86','rgba(255,77,109,.45)'],local:['rgba(255,180,67,.15)','#FFB443','rgba(255,180,67,.4)'],wait:['rgba(108,92,231,.18)','#A99EFF','rgba(108,92,231,.42)']}[mode]||['rgba(108,92,231,.18)','#A99EFF','rgba(108,92,231,.42)'];n.textContent=text;n.style.background=palette[0];n.style.color=palette[1];n.style.border='1px solid '+palette[2];
+}
+function stamp2000(v){const t=Date.parse(v||'');return Number.isFinite(t)?t:0;}
+function progressVector2000(s){const n=normalizeState(s||{});return [Object.values(n.dayDone).filter(Boolean).length,Object.keys(n.seen).length,Object.keys(n.mastered).length,Number(n.quizStat.done||0),Number(n.xp||0),stamp2000(n.updatedAt)];}
+function newerState2000(a,b){const av=progressVector2000(a),bv=progressVector2000(b);for(let i=0;i<av.length;i++){if(av[i]!==bv[i])return av[i]>bv[i]?a:b;}return a;}
+function mergeUnique2000(a,b,limit,keyFn){const out=[],seen=new Set();[...(a||[]),...(b||[])].forEach(x=>{const k=keyFn?keyFn(x):JSON.stringify(x);if(!seen.has(k)){seen.add(k);out.push(x);}});out.sort((x,y)=>stamp2000(y?.date||y?.login||y?.createdAt)-stamp2000(x?.date||x?.login||x?.createdAt));return out.slice(0,limit);}
+function metaStamp2000(m){return Math.max(stamp2000(m?.resolvedDate),stamp2000(m?.lastCorrectDate),stamp2000(m?.lastWrongDate),stamp2000(m?.lastReviewedDate),stamp2000(m?.firstWrongDate));}
+function mergeDayLog2000(a,b){const o={...(a||{})};Object.entries(b||{}).forEach(([d,v])=>{const x=o[d]||{};o[d]={...v,...x,quizzes:Math.max(+x.quizzes||0,+v.quizzes||0),retests:Math.max(+x.retests||0,+v.retests||0),bestPct:Math.max(+x.bestPct||0,+v.bestPct||0),firstDone:[x.firstDone,v.firstDone].filter(Boolean).sort()[0]||null,lastStudied:[x.lastStudied,v.lastStudied].filter(Boolean).sort().pop()||null,lastMailAt:[x.lastMailAt,v.lastMailAt].filter(Boolean).sort().pop()||null,mailConfirmedAt:[x.mailConfirmedAt,v.mailConfirmedAt].filter(Boolean).sort().pop()||null};});return o;}
+function mergeDaily2000(a,b){const o={...(a||{})};Object.entries(b||{}).forEach(([d,v])=>{const x=o[d]||{};o[d]={...v,...x,studied:Math.max(+x.studied||0,+v.studied||0),quizzed:Math.max(+x.quizzed||0,+v.quizzed||0),correct:Math.max(+x.correct||0,+v.correct||0),xp:Math.max(+x.xp||0,+v.xp||0)};});return o;}
+function mergeVocaStates2000(left,right){
+ const a=normalizeState(left||{}),b=normalizeState(right||{}),chosen=newerState2000(a,b),base=JSON.parse(JSON.stringify(chosen)),other=chosen===a?b:a;
+ const out=normalizeState(base);
+ ['seen','fav','dayDone'].forEach(k=>{out[k]={...(other[k]||{}),...(out[k]||{})};Object.keys(out[k]).forEach(id=>{if(!out[k][id])delete out[k][id];});});
+ const ids=new Set([...Object.keys(a.mastered||{}),...Object.keys(b.mastered||{})]);out.mastered={};ids.forEach(id=>{const v=Math.max(+a.mastered[id]||0,+b.mastered[id]||0);if(v>0)out.mastered[id]=v;});
+ const wrongIds=new Set([...Object.keys(a.wrong||{}),...Object.keys(b.wrong||{}),...Object.keys(a.wrongMeta||{}),...Object.keys(b.wrongMeta||{})]);out.wrong={};out.wrongMeta={};
+ wrongIds.forEach(id=>{const am=a.wrongMeta[id]||{},bm=b.wrongMeta[id]||{};let chosen=metaStamp2000(am)>metaStamp2000(bm)?am:metaStamp2000(bm)>metaStamp2000(am)?bm:((am.reviewStage==='STABLE'||am.active===false)?am:bm);chosen={...chosen,totalWrongCount:Math.max(+am.totalWrongCount||0,+bm.totalWrongCount||0),reviewCount:Math.max(+am.reviewCount||0,+bm.reviewCount||0),resolvedCount:Math.max(+am.resolvedCount||0,+bm.resolvedCount||0)};const lastWrong=Math.max(stamp2000(am.lastWrongDate),stamp2000(bm.lastWrongDate));const resolved=Math.max(stamp2000(am.resolvedDate),stamp2000(bm.resolvedDate),stamp2000(am.lastCorrectDate),stamp2000(bm.lastCorrectDate));const stable=chosen.reviewStage==='STABLE'||chosen.active===false||resolved>=lastWrong&&resolved>0;chosen.active=!stable;if(stable){chosen.reviewStage='STABLE';chosen.nextReviewDate=null;}out.wrongMeta[id]=chosen;const count=Math.max(+a.wrong[id]||0,+b.wrong[id]||0);if(!stable&&count>0)out.wrong[id]=count;});
+ out.dayLog=mergeDayLog2000(a.dayLog,b.dayLog);out.daily=mergeDaily2000(a.daily,b.daily);
+ out.quizStat={done:Math.max(+a.quizStat.done||0,+b.quizStat.done||0),correct:Math.max(+a.quizStat.correct||0,+b.quizStat.correct||0)};out.xp=Math.max(+a.xp||0,+b.xp||0);out.streak=Math.max(+a.streak||0,+b.streak||0);out.lastDate=[a.lastDate,b.lastDate].filter(Boolean).sort().pop()||'';
+ out.history=mergeUnique2000(a.history,b.history,500,x=>[x.date,x.day,x.type,x.correct,x.total].join('|'));out.sessions=mergeUnique2000(a.sessions,b.sessions,500,x=>[x.login,x.day,x.type,x.correct,x.total].join('|'));out.wrongHistory=mergeUnique2000(a.wrongHistory,b.wrongHistory,2000,x=>[x.date,x.id,x.event,x.phase].join('|'));out.mailLog=mergeUnique2000(a.mailLog,b.mailLog,200,x=>[x.date||x.sentAt,x.day,x.status].join('|'));
+ const pend=[a.pendingCompletion,b.pendingCompletion].filter(Boolean).sort((x,y)=>stamp2000(y.createdAt)-stamp2000(x.createdAt))[0]||null;out.pendingCompletion=pend&&out.dayDone[pend.day]?null:pend;out.schemaVersion=APP_DATA_VERSION;out.updatedAt=new Date(Math.max(stamp2000(a.updatedAt),stamp2000(b.updatedAt),Date.now())).toISOString();return normalizeState(out);
+}
+function cloudEnvelope2000(state,writeId){return{app:'voca2000',student:'8081',schemaVersion:1,stateVersion:APP_DATA_VERSION,updatedAt:new Date().toISOString(),deviceId:cloudDeviceId2000(),writeId,state:JSON.parse(JSON.stringify(normalizeState(state)))};}
+function applyCloudState2000(next,message){cloud2000.applying=true;try{const merged=mergeVocaStates2000(S,next);const prev=localStorage.getItem(KEY);if(prev)localStorage.setItem(SNAPSHOT_KEY,prev);S=normalizeState(merged);localStorage.setItem(KEY,JSON.stringify(S));syncScheduleState();if(ROLE){renderSidebar();if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}if(message)toast(message);}finally{cloud2000.applying=false;}}
+function scheduleCloudSave2000(force=false){if(cloud2000.applying)return;if(!cloud2000.ready||!cloud2000.ref){cloud2000.pending=true;return;}cloud2000.pending=false;clearTimeout(cloud2000.timer);const elapsed=Date.now()-cloud2000.lastWriteAt;const delay=force?100:Math.max(1800,12000-elapsed);cloud2000.timer=setTimeout(writeCloud2000,delay);}
+async function writeCloud2000(){if(!cloud2000.ready||cloud2000.writing||!cloud2000.ref)return;cloud2000.writing=true;const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;setCloudStatus2000('☁ 진도 저장 중','wait');try{await cloud2000.ref.transaction(current=>{const remote=current&&current.state?current.state:null;return cloudEnvelope2000(remote?mergeVocaStates2000(localSnapshot,remote):localSnapshot,writeId);});cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 클라우드 진도 저장됨','ok');}catch(e){console.warn('클라우드 저장 실패',e);cloud2000.pending=true;setCloudStatus2000('로컬 저장 · 연결 시 재동기화','local');}finally{cloud2000.writing=false;}}
+async function initCloudSync2000(){setCloudStatus2000('☁ 클라우드 진도 연결 중','wait');if(!window.firebase){setCloudStatus2000('클라우드 모듈 차단 · 로컬 저장','local');return false;}try{cloud2000.app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);cloud2000.auth=firebase.auth();cloud2000.db=firebase.database();await cloud2000.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);if(!cloud2000.auth.currentUser)await cloud2000.auth.signInWithEmailAndPassword(CLOUD_STUDENT_EMAIL,CLOUD_STUDENT_PASSWORD);cloud2000.ref=cloud2000.db.ref(CLOUD_2000_PATH);const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-boot-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;const result=await cloud2000.ref.transaction(current=>cloudEnvelope2000(current&&current.state?mergeVocaStates2000(localSnapshot,current.state):localSnapshot,writeId));const payload=result.snapshot.val();if(payload&&payload.state)applyCloudState2000(payload.state,'클라우드 누적 진도를 불러왔습니다');cloud2000.ready=true;cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 모든 기기 진도 동기화','ok');cloud2000.ref.on('value',snap=>{const p=snap.val();if(!p||!p.state||p.writeId===cloud2000.lastWriteId||cloud2000.writing)return;applyCloudState2000(p.state,'다른 기기의 최신 진도를 반영했습니다');setCloudStatus2000('✓ 최신 진도 반영됨','ok');});if(cloud2000.pending)scheduleCloudSave2000(true);return true;}catch(e){console.error('Firebase 진도 연결 실패',e);setCloudStatus2000('클라우드 인증 확인 필요 · 로컬 저장','error');return false;}}
+window.addEventListener('online',()=>{if(cloud2000.ready)scheduleCloudSave2000(true);else initCloudSync2000();});
+
+
 /* ===== state ===== */
 // 저장 키는 구버전과 동일하게 유지한다. 키를 바꾸면 기존 누적 학습·오답 데이터가 끊어진다.
 const KEY='wm2000_v3';
 const SNAPSHOT_KEY='wm2000_v3_snapshot';
-const APP_DATA_VERSION=8;
+const APP_DATA_VERSION=9;
 const APP_TITLE='2000_18DAY';
 const WRONG_PRIMARY_HOLD_MS=3000;
 const COGNITION_REVEAL_MS=4000;
@@ -471,7 +514,7 @@ function load(){const primary=parseStore(KEY),snapshot=parseStore(SNAPSHOT_KEY),
   S._mailGateV7Migrated=true;
  }
  save(true);}
-function save(skipSnapshot=false){try{S.schemaVersion=APP_DATA_VERSION;S.updatedAt=new Date().toISOString();const payload=JSON.stringify(S);const prev=localStorage.getItem(KEY);if(!skipSnapshot&&prev){try{const old=JSON.parse(prev);if(obj(old))localStorage.setItem(SNAPSHOT_KEY,prev);}catch(e){}}localStorage.setItem(KEY,payload);saveFailed=false;return true;}catch(e){console.error('학습 데이터 저장 실패',e);saveFailed=true;const t=document.querySelector&&document.querySelector('#toast');if(t)toast('저장 공간 오류: 백업 파일을 내려받으세요');return false;}}
+function save(skipSnapshot=false){try{S.schemaVersion=APP_DATA_VERSION;S.updatedAt=new Date().toISOString();const payload=JSON.stringify(S);const prev=localStorage.getItem(KEY);if(!skipSnapshot&&prev){try{const old=JSON.parse(prev);if(obj(old))localStorage.setItem(SNAPSHOT_KEY,prev);}catch(e){}}localStorage.setItem(KEY,payload);saveFailed=false;if(!cloud2000.applying)scheduleCloudSave2000();return true;}catch(e){console.error('학습 데이터 저장 실패',e);saveFailed=true;const t=document.querySelector&&document.querySelector('#toast');if(t)toast('저장 공간 오류: 백업 파일을 내려받으세요');return false;}}
 load();
 
 /* ===== 로그인 세션 추적 ===== */
@@ -1113,8 +1156,8 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ===== init ===== */
-syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);
-window.addEventListener('pagehide',()=>save());
+syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);window.addEventListener('load',initCloudSync2000);
+window.addEventListener('pagehide',()=>{save();scheduleCloudSave2000(true);});
 window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
 window.addEventListener('pageshow',()=>{if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;pendingCompletion=S.pendingCompletion||null;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}}catch(err){}}});
