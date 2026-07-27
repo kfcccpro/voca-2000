@@ -409,6 +409,7 @@ const KEY='wm2000_v3';
 const SNAPSHOT_KEY='wm2000_v3_snapshot';
 const APP_DATA_VERSION=6;
 const APP_TITLE='2000_18DAY';
+const APP_BUILD='2000_18DAY r2 (2026-07-27)';
 const defState=()=>({
  schemaVersion:APP_DATA_VERSION,updatedAt:'',
  seen:{},mastered:{},wrong:{},fav:{},dayDone:{},
@@ -472,7 +473,7 @@ function datePlus(dateStr,days){const d=new Date((dateStr||today())+'T12:00:00')
 function uniqueWords(list){const seen=new Set();return (list||[]).filter(w=>w&&!seen.has(w[0])&&seen.add(w[0]));}
 function dueWrongList(){const t=today();return Object.keys(S.wrongMeta||{}).filter(id=>{const m=S.wrongMeta[id];return m&&m.active&&m.nextReviewDate&&m.nextReviewDate<=t&&S.wrong[id]>0;}).map(id=>byId[+id]).filter(Boolean);}
 function syncScheduleState(){S.wrongMeta=S.wrongMeta||{};Object.keys(S.wrong||{}).forEach(id=>{if(S.wrong[id]>0&&!S.wrongMeta[id])S.wrongMeta[id]={firstWrongDate:S.lastDate||today(),lastWrongDate:S.lastDate||today(),nextReviewDate:today(),reviewCount:0,sourceDay:(byId[+id]||[])[1]||0,active:true};});
- S.dayDone={};for(let d=1;d<=DAYS;d++){const p=dayProgress(d);S.dayDone[d]=p.total>0&&p.seen===p.total;}save();}
+ for(let d=1;d<=DAYS;d++){const p=dayProgress(d);if(p.total>0&&p.seen===p.total)S.dayDone[d]=true;}save();}
 function touchStreak(){const t=today();if(S.lastDate===t)return;
  const y=new Date();y.setDate(y.getDate()-1);const ys=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
  S.streak=(S.lastDate===ys)?S.streak+1:1;S.lastDate=t;save();}
@@ -493,9 +494,13 @@ function dayCumulativeWrongCount(day){return wordsOf(day).reduce((sum,w)=>sum+Ma
 function logWrongEvent(w,event,phase,note=''){S.wrongHistory=S.wrongHistory||[];const m=S.wrongMeta[w[0]]||{};S.wrongHistory.unshift({date:new Date().toISOString(),id:w[0],word:w[3],day:w[1],event,phase:phase||'',note,activeCount:S.wrong[w[0]]||0,totalWrongCount:m.totalWrongCount||0});if(S.wrongHistory.length>2000)S.wrongHistory.length=2000;}
 function resolveWrong(id,phase='manual-clear'){const w=byId[+id];if(!w)return;const m=S.wrongMeta[id]||(S.wrongMeta[id]={});S.wrong[id]=0;m.active=false;m.resolvedDate=today();m.lastCorrectDate=today();m.resolvedCount=(m.resolvedCount||0)+1;logWrongEvent(w,'resolved',phase);save();}
 function dayProgress(d){const ws=wordsOf(d);return{seen:ws.filter(w=>S.seen[w[0]]).length,total:ws.length};}
-function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(dayProgress(d).seen<dayProgress(d).total)return d;}return DAYS;}
+function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(!dayCompleted(d))return d;}return DAYS;}
+// DAY 완료 판정: 단어를 모두 봤거나(전체 출제) 본 시험을 1회 이상 마쳤을 때(문항 수 제한 출제)
+function dayCompleted(d){const p=dayProgress(d);if(p.total>0&&p.seen===p.total)return true;
+ if(S.dayDone&&S.dayDone[d])return true;
+ const lg=S.dayLog&&S.dayLog[d];return !!(lg&&(lg.quizzes||0)>0);}
 function currentDay(){ // 학습자 "며칠째": 완료한 DAY + 1, 최대 18
- let done=0;for(let d=1;d<=DAYS;d++){if(dayProgress(d).seen===dayProgress(d).total)done=d;else break;}
+ let done=0;for(let d=1;d<=DAYS;d++){if(dayCompleted(d))done=d;else break;}
  return Math.min(done+1,DAYS);}
 
 /* ===== 한글 유사도 (주관식 채점) ===== */
@@ -504,7 +509,12 @@ function meaningVariants(mean){
  let variants=[];
  // "발달[발전]하다" → 발달하다, 발전하다
  const expandBracket=s=>{const m=s.match(/(.*)\[(.+?)\](.*)/);if(!m)return [s];
-  const base=m[1],alt=m[2],tail=m[3];return [base+tail, base.slice(0,base.length)+alt+tail].map(x=>x.trim());};
+  const base=m[1],alt=m[2],tail=m[3];
+  // 대괄호는 "바로 앞 어절"을 대체한다.
+  // "발달[발전]하다" -> 발달하다 / 발전하다
+  // "영향을 미치는 것[사람]" -> 영향을 미치는 것 / 영향을 미치는 사람
+  const sp=base.lastIndexOf(' '),head=sp>=0?base.slice(0,sp+1):'';
+  return [base+tail, head+alt+tail].map(x=>x.trim());};
  mean.split(/[,;/]/).forEach(part=>{part=part.trim();if(!part)return;
   // (~) 제거, ~ 제거
   part=part.replace(/\([^)]*\)/g,'').replace(/[~\.]/g,'').trim();
@@ -527,12 +537,21 @@ function checkAnswer(userInput,meanStr){
  const variants=meaningVariants(meanStr);
  let best=0;
  for(const v of variants){const nv=normKo(v);if(!nv)continue;
-  // 완전일치 or 포함
-  if(u===nv||nv.includes(u)&&u.length>=2||u.includes(nv)&&nv.length>=2){best=1;break;}
+  // 완전일치
+  if(u===nv){best=1;break;}
+  // 부분일치는 "뜻 항목 하나를 사실상 다 쓴 경우"만 인정한다.
+  // (예: "공급"→"공급하다" 인정 / "사람"→"영향을미치는사람" 불인정)
+  const shorter=Math.min(u.length,nv.length),longer=Math.max(u.length,nv.length);
+  const contains=nv.includes(u)||u.includes(nv);
+  if(contains&&shorter>=2&&shorter/longer>=0.5){best=1;break;}
   best=Math.max(best,simRatio(u,nv));
  }
  return {ok:best>=th,score:Math.round(best*100)};
 }
+/* 같은 뜻을 가진 단어들(동의어)을 미리 묶어둔다: 한→영 주관식에서 함께 정답 인정 */
+const SYNONYM_GROUPS=(()=>{const m={};WORDS.forEach(w=>{const k=(w[4]||'').trim();(m[k]=m[k]||[]).push(w[3]);});
+ const out={};Object.keys(m).forEach(k=>{if(m[k].length>1)m[k].forEach(en=>out[en.toLowerCase()]=m[k].map(x=>x.toLowerCase()));});return out;})();
+function acceptedSpellings(word){const k=(word||'').toLowerCase();return SYNONYM_GROUPS[k]||[k];}
 
 /* ===== FX ===== */
 function confetti(x,y,n=90){const L=$('#fxLayer');const cols=['#6C5CE7','#00E5D4','#A6FF3D','#FF5DA2','#FFB443','#2BE38A'];
@@ -657,7 +676,7 @@ function renderStudy(){const cd=currentDay();const doneN=Object.keys(S.dayDone).
   </div><div class="daygrid" id="dayGrid"></div>`;
  const g=$('#dayGrid');
  for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);let cls='daycell';
-  if(dp.seen===dp.total)cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';
+  if(dayCompleted(d))cls+=' done';else if(dp.seen>0)cls+=' partial';if(d===cd)cls+=' today-mark';
   const c=el('button',cls,`<div class="dn">${d}</div><div class="dp">${dp.seen}/${dp.total}</div><span class="ring" style="width:${dp.seen/dp.total*100}%"></span>`);
   c.onclick=()=>openDayPick(d);g.appendChild(c);}
 }
@@ -744,7 +763,16 @@ function showWrongReveal(w,dir,onDone){clearWrongReveal();if(SESS)SESS.blocked=t
  wrongRevealTimer=setTimeout(()=>{clearWrongReveal();onDone();},5000);}
 function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
  // dir 'en' => 영단어 보고 뜻 선택 / 'ko' => 뜻 보고 단어 선택
- const distract=shuffle(WORDS.filter(x=>x[0]!==w[0])).slice(0,3);
+ // 보기에 표시될 텍스트가 정답과 완전히 같은 단어는 오답 보기에서 제외한다.
+ const face=x=>dir==='en'?x[4]:x[3];
+ const correctFace=face(w),seenFace=new Set([correctFace]);
+ const distract=[];
+ for(const x of shuffle(WORDS)){
+  if(distract.length>=3)break;
+  if(x[0]===w[0])continue;
+  const f=face(x);if(seenFace.has(f))continue;
+  seenFace.add(f);distract.push(x);
+ }
  const opts=shuffle([w,...distract]);
  const q=dir==='en'?w[3]:w[4];const label=dir==='en'?'이 단어의 뜻은?':'이 뜻을 가진 단어는?';
  stage('vQuiz',`<div class="q-stage">
@@ -753,12 +781,14 @@ function renderMC(){const {qs,i,correct,combo}=SESS;const {w,dir}=qs[i];
    <div class="progline"><i style="width:${i/qs.length*100}%"></i></div>
    <div class="card" style="margin-top:18px"><div class="q-sub">${label} <span style="color:${dir==='en'?'var(--iris2)':'var(--cyan)'}">[${dir==='en'?'영→한':'한→영'}]</span></div>
      <div class="q-word">${q}</div>
-     <div class="opts" id="opts">${opts.map((o,k)=>`<button class="opt" data-id="${o[0]}">${dir==='en'?o[4]:o[3]}<span class="kbd">${k+1}</span></button>`).join('')}</div></div>
+     <div class="opts" id="opts">${opts.map((o,k)=>`<button class="opt" data-id="${o[0]}" data-face="${(dir==='en'?o[4]:o[3]).replace(/"/g,'&quot;')}">${dir==='en'?o[4]:o[3]}<span class="kbd">${k+1}</span></button>`).join('')}</div></div>
  </div>`);
  $('#opts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>pickMC(b,w));bindKeys();
 }
 function pickMC(btn,w){const opts=$('#opts');if(opts.dataset.lock||SESS.blocked)return;opts.dataset.lock=1;
- const ok=+btn.dataset.id===w[0];const dir=SESS.qs[SESS.i].dir;
+ const dir=SESS.qs[SESS.i].dir;
+ // ID가 달라도 표시 텍스트가 정답과 같으면 정답으로 인정 (억울한 오답 방지)
+ const ok=(+btn.dataset.id===w[0])||(btn.dataset.face||'')===((dir==='en'?w[4]:w[3])||'');
  opts.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(+b.dataset.id===w[0])b.classList.add('correct');else if(b===btn)b.classList.add('wrong');});
  gradeAnswer(w,ok,btn);if(ok)setTimeout(nextQ,650);else showWrongReveal(w,dir,nextQ);
 }
@@ -785,9 +815,13 @@ function submitSA(){const inp=$('#saInput');if(!inp||inp.dataset.done)return nex
  inp.dataset.done=1;inp.disabled=true;
  let ok,score,correctAns;
  if(dir==='en'){const r=checkAnswer(val,w[4]);ok=r.ok;score=r.score;correctAns=w[4];}
- else{ // 한→영: 영어 스펠링 유사도
-  const u=val.toLowerCase().replace(/\s/g,'');const t=w[3].toLowerCase().replace(/\s/g,'');
-  score=Math.round(simRatio(u,t)*100);ok=(u===t)||score>=(S.config.saThreshold||80);correctAns=w[3];}
+ else{ // 한→영: 영어 스펠링 유사도 (뜻이 같은 동의어도 정답 인정)
+  const u=val.toLowerCase().replace(/\s/g,'');
+  const cands=acceptedSpellings(w[3]).map(x=>x.replace(/\s/g,''));
+  score=Math.max(...cands.map(t=>Math.round(simRatio(u,t)*100)));
+  ok=cands.includes(u)||score>=(S.config.saThreshold||80);
+  const others=acceptedSpellings(w[3]).filter(x=>x!==w[3].toLowerCase());
+  correctAns=others.length?`${w[3]} (동의어 인정: ${others.join(', ')})`:w[3];}
  const fb=$('#saFb');fb.style.color=ok?'var(--green)':'var(--red)';
  fb.textContent=ok?`✓ 정답! (유사도 ${score}%)`:`✗ 오답 (유사도 ${score}%)`;
  $('#saAns').innerHTML=`<div class="sa-answer">정답: <b>${correctAns}</b>${ok?' · Enter를 누르면 다음 문제':' · 5초 동안 정답을 확인합니다'}</div>`;
@@ -807,7 +841,7 @@ function gradeAnswer(w,ok,btn){if(!S.seen[w[0]])S.seen[w[0]]=true;const phase=SE
 function nextQ(){if(SESS&&SESS.blocked)return;if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);}if(SESS.i===SESS.qs.length-1){finishQuiz();return;}SESS.i++;SESS.mode==='sa'?renderSA():renderMC();}
 function exitQuiz(){clearWrongReveal();unbindKeys();if(saEnterHandler){document.removeEventListener('keydown',saEnterHandler);saEnterHandler=null;}go('Home');}
 function persistQuizResult(result){S.quizStat.done+=result.total;S.quizStat.correct+=result.correct;markDaily('quizzed');const t=today();S.daily[t].correct=(S.daily[t].correct||0)+result.correct;
- if(result.day&&result.phase==='main'){S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].quizzes++;S.dayLog[result.day].bestPct=Math.max(S.dayLog[result.day].bestPct||0,result.pct);S.dayLog[result.day].lastStudied=today();}
+ if(result.day&&result.phase==='main'){S.dayDone[result.day]=true;S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].quizzes++;S.dayLog[result.day].bestPct=Math.max(S.dayLog[result.day].bestPct||0,result.pct);S.dayLog[result.day].lastStudied=today();}
  if(result.day&&result.phase==='retry'){S.dayLog[result.day]=S.dayLog[result.day]||{firstDone:today(),quizzes:0,retests:0,bestPct:0};S.dayLog[result.day].retests=(S.dayLog[result.day].retests||0)+1;}
  const type=result.phase==='scheduled'?'3일 오답 복습':result.phase==='retry'?'즉시 오답 재시험':result.phase==='manual'?'오답 집중시험':result.mode==='sa'?'주관식':'객관식';
  S.history.unshift({date:new Date().toISOString(),type,day:result.day||result.originDay||0,correct:result.correct,total:result.total,xp:result.gained});if(S.history.length>200)S.history.length=200;
@@ -902,7 +936,7 @@ function renderConfig(){const c=S.config;
      <input type="range" class="slider" min="0" max="100" step="10" value="${c.enPct}" oninput="setRatio(this.value)">
      <div style="display:flex;justify-content:space-between" class="mini"><span>전부 한→영</span><span>반반</span><span>전부 영→한</span></div>
      <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:12px;font-size:13px;color:var(--txt2);line-height:1.7">
-       ${c.quizCount>0?`예시: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b>`:`전체 출제 시 DAY별 단어 수(111~112개)를 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}</div>
+       ${c.quizCount>0?`예시: ${c.quizCount}문제 중 <b style="color:var(--iris2)">영→한 ${Math.round(c.quizCount*c.enPct/100)}문제</b>, <b style="color:var(--cyan)">한→영 ${c.quizCount-Math.round(c.quizCount*c.enPct/100)}문제</b>`:`전체 출제 시 DAY별 단어 수(111~112개)를 <b style="color:var(--iris2)">영→한 ${c.enPct}%</b> / <b style="color:var(--cyan)">한→영 ${100-c.enPct}%</b> 비율로 배분`}${c.quizCount>0?`<div class="mini" style="margin-top:8px;color:var(--amber)">※ 문제 수를 직접지정하면 그날 단어 중 일부만 출제되어 학습률(%)이 100%에 도달하지 않습니다. 본 시험을 1회 마치면 DAY는 완료로 처리됩니다.</div>`:''}</div>
    </div>
   </div>
   <div class="card" style="margin-top:18px">
