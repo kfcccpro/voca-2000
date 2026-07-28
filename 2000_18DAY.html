@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>2000_18DAY CLOUD V10.4 SCHEDULE · MAIL AUDIT</title>
+<title>2000_18DAY CLOUD V10.5 · PROGRESS ONLY</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -227,7 +226,6 @@ td .num,th .num{font-family:var(--disp)}
 .bar-cell .track{flex:1;height:7px;background:var(--bg);border-radius:20px;overflow:hidden;min-width:80px}
 .bar-cell .track>i{display:block;height:100%;background:var(--grad-hero);border-radius:20px}
 .admin-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
-.mail-note{background:rgba(0,229,212,.08);border:1px solid rgba(0,229,212,.25);border-radius:16px;padding:16px 20px;font-size:13px;color:var(--txt2);margin-bottom:20px;line-height:1.7}
 .mail-note b{color:var(--cyan)}
 .cfg-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--bg2)}
 .cfg-row:last-child{border-bottom:none}
@@ -280,22 +278,17 @@ button{min-height:44px}
 .wrong-reveal-note{margin-top:24px;font-size:14px;color:var(--txt2);font-weight:700;opacity:0;animation:answerAppear .55s 2.05s var(--ease) forwards}
 @keyframes revealBg{from{opacity:0}to{opacity:1}}
 @keyframes answerAppear{to{opacity:1;transform:none}}
-.completion-gate{position:fixed;inset:0;z-index:270;display:grid;place-items:center;padding:22px;background:rgba(8,10,16,.93);
  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.completion-gate-card{width:min(720px,96vw);max-height:92vh;overflow:auto;background:linear-gradient(160deg,rgba(0,229,212,.13),var(--panel2) 38%,var(--panel));
  border:1px solid var(--line2);border-radius:30px;padding:32px;box-shadow:0 32px 110px rgba(0,0,0,.7)}
-.completion-gate-title{font-family:var(--disp);font-weight:700;font-size:clamp(26px,5vw,40px);letter-spacing:-1px;text-align:center}
 .completion-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0}
 .completion-summary>div{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:center}
 .completion-summary b{display:block;font-family:var(--disp);font-size:23px;margin-top:3px}
-.mail-status{border-radius:14px;padding:14px 16px;margin:14px 0;font-size:14px;font-weight:700;line-height:1.55;background:var(--bg);border:1px solid var(--line);color:var(--txt2)}
 .mail-status.ok{border-color:rgba(43,227,138,.5);color:var(--green);background:rgba(43,227,138,.08)}
 .mail-status.err{border-color:rgba(255,77,109,.5);color:var(--red);background:rgba(255,77,109,.08)}
 .safe-bottom{padding-bottom:max(12px,env(safe-area-inset-bottom))}
 @media(max-width:600px){
  .main{padding-left:12px;padding-right:12px}.topbar{padding-top:14px}.day-hero{padding:28px 16px}.day-hero .daynum{font-size:58px}
  .card{padding:18px}.opt{padding:17px 16px;font-size:16px}.opt .kbd{display:none}.q-word{overflow-wrap:anywhere}
- .completion-summary{grid-template-columns:1fr}.completion-gate-card{padding:22px 16px;border-radius:22px}.wrong-reveal-card{min-height:360px;padding:32px 20px}
  input,select,textarea{font-size:16px!important}
 }
 @media(max-width:420px){.daygrid{grid-template-columns:repeat(3,1fr);gap:8px}.daycell{border-radius:13px}.daycell .dn{font-size:17px}.admin-grid{grid-template-columns:1fr}}
@@ -336,14 +329,7 @@ button{min-height:44px}
 
 
 /* V10.3: explicit mandatory manual mail action at every DAY end */
-.completion-gate-card{display:flex;flex-direction:column}
-.completion-mail-instruction{margin:10px 0 2px;padding:12px 14px;border:2px solid rgba(255,180,67,.62);border-radius:14px;background:rgba(255,180,67,.10);color:var(--amber);text-align:center;font-size:clamp(15px,2.6vw,19px);font-weight:900;line-height:1.45}
-.completion-gate-actions{position:sticky;bottom:-1px;z-index:2;margin:6px -8px -8px;padding:14px 8px 8px;background:linear-gradient(180deg,rgba(27,31,46,0),var(--panel2) 20%,var(--panel2));border-radius:0 0 20px 20px}
-#completionMailBtn{min-height:96px;font-size:clamp(20px,4vw,29px);line-height:1.25;border-radius:20px;box-shadow:0 18px 50px rgba(108,92,231,.52);animation:mailRequiredPulse 1.7s ease-in-out infinite}
-#completionMailBtn:disabled{animation:none;opacity:.68}
 #completionDoneBtn{min-height:72px;font-size:18px}
-@keyframes mailRequiredPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.012);box-shadow:0 22px 62px rgba(0,229,212,.34)}}
-@media(max-width:600px){.completion-gate{padding:0}.completion-gate-card{width:100%;max-height:100vh;height:100vh;border-radius:0;padding:20px 14px 10px}.completion-summary{margin:12px 0}.completion-gate-actions{margin-top:auto}.completion-mail-instruction{font-size:15px}#completionMailBtn{min-height:104px;font-size:22px}}
 
 /* ===== PRINT (A4 시험지) ===== */
 @media print{
@@ -420,21 +406,13 @@ const DAYS=18,TOTAL=WORDS.length;
 const DAY_BASE=Math.floor(TOTAL/DAYS),DAY_EXTRA=TOTAL%DAYS,MAX_DAY_WORDS=Math.ceil(TOTAL/DAYS);
 // 2,000개 단어를 순서대로 18일에 균등 배분: DAY 1~2는 112개, DAY 3~18은 111개
 (function rebuild18DaySchedule(){let idx=0;for(let d=1;d<=DAYS;d++){const count=DAY_BASE+(d<=DAY_EXTRA?1:0);for(let n=1;n<=count&&idx<TOTAL;n++,idx++){WORDS[idx][1]=d;WORDS[idx][2]=n;}}})();
-const ADMIN_EMAIL='sk01197375068@gmail.com';
 const COURSE_START_ISO='2026-07-27',COURSE_START_UTC=Date.UTC(2026,6,27),COURSE_WEEKDAYS=['일','월','화','수','목','금','토'];
 function courseSchedule(dayNo){const day=Math.max(1,Math.min(DAYS,Number(dayNo||1))),d=new Date(COURSE_START_UTC+(day-1)*86400000),mm=String(d.getUTCMonth()+1).padStart(2,'0'),dd=String(d.getUTCDate()).padStart(2,'0'),weekday=COURSE_WEEKDAYS[d.getUTCDay()];return{day,iso:`${d.getUTCFullYear()}-${mm}-${dd}`,short:`${mm}.${dd}(${weekday})`,weekday,week:Math.floor((day-1)/7)+1};}
 function courseDayLabel(dayNo){const s=courseSchedule(dayNo);return`DAY ${String(s.day).padStart(2,'0')} · ${s.short}`;}
 const PW_LEARNER_FNV32=1069609042,PW_ADMIN_FNV32=3475938270; // 평문 PIN은 저장하지 않습니다.
 function pinHash(value){let hash=2166136261;for(const ch of String(value||'')){hash^=ch.charCodeAt(0);hash=Math.imul(hash,16777619)>>>0;}return hash>>>0;}
-const EMAILJS_SERVICE_ID='service_v23hns6';
-const EMAILJS_TEMPLATE_ID='template_v2zb8ni';
-const EMAILJS_PUBLIC_KEY='JJdWMghPhZrilD_ZQ';
 const byId={};WORDS.forEach(w=>byId[w[0]]=w);
 const wordsOf=d=>WORDS.filter(w=>w[1]===d);
-let emailJSReady=false;
-function initEmailJS(){if(window.emailjs){try{emailjs.init(EMAILJS_PUBLIC_KEY);emailJSReady=true;}catch(e){}}}
-function vocaMailAuditRecord(payload,method,sentAt=new Date().toISOString()){const s=courseSchedule(payload.day);return{app:'voca2000',course:'수능 필수 WORD MASTER 2000',student:'8081',day:Number(payload.day),dayLabel:courseDayLabel(payload.day),scheduledDate:s.iso,recipient:payload.to_email||ADMIN_EMAIL,sentAt,method:method||'unknown',reportId:payload.report_id||'',status:'provider-accepted',deliveryVerified:false,note:'메일 전송 서비스가 요청을 접수한 상태이며 실제 받은편지함 도착은 관리자 메일함에서 최종 확인합니다.'};}
-async function saveVocaMailAudit(payload,method,sentAt=new Date().toISOString()){const record=vocaMailAuditRecord(payload,method,sentAt);S.dayLog[record.day]=S.dayLog[record.day]||{};Object.assign(S.dayLog[record.day],{mailRecipient:record.recipient,mailMethod:record.method,mailReportId:record.reportId,mailAcceptedAt:record.sentAt,mailDeliveryStatus:record.status,mailDeliveryVerified:false});try{if(cloud2000.db&&cloud2000.auth?.currentUser){await cloud2000.db.ref(`singleStudent/8081/mailReports/voca2000/day${String(record.day).padStart(2,'0')}`).set(record);S.dayLog[record.day].mailAuditSavedAt=new Date().toISOString();}}catch(error){console.warn('WORD 2000 메일 증빙 저장 실패',error);S.dayLog[record.day].mailAuditError=String(error?.message||error);}save();return record;}
 
 /* ===== 역할 ===== */
 let ROLE=null; // 'learner' | 'admin'
@@ -467,10 +445,9 @@ function hubDetail2000(dayNo){
   try{
     const day=Number(dayNo||currentDay()||1),dp=dayProgress(day),log=S.dayLog?.[day]||{};
     return {day,completedDays:Object.keys(S.dayDone||{}).filter(d=>S.dayDone[d]).length,totalDays:DAYS,
-      seen:dp.seen,total:dp.total,started:dp.seen>0||Boolean(log.lastStudied)||Boolean(S.pendingCompletion&&S.pendingCompletion.day===day),
-      dayDone:Boolean(S.dayDone?.[day]),mailConfirmedAt:log.mailConfirmedAt||log.lastMailAt||null,mailRecipient:log.mailRecipient||ADMIN_EMAIL,mailMethod:log.mailMethod||null,mailReportId:log.mailReportId||null,mailDeliveryStatus:log.mailDeliveryStatus||null,
-      pendingCompletion:Boolean(S.pendingCompletion&&S.pendingCompletion.day===day)};
-  }catch(_error){return {day:Number(dayNo||1),totalDays:18};}
+      seen:dp.seen,total:dp.total,started:dp.seen>0||Boolean(log.lastStudied),
+      dayDone:Boolean(S.dayDone?.[day]),completedAt:log.completedAt||null};
+  }catch(e){return{day,totalDays:DAYS};}
 }
 function sendHub2000(type,detail={}){if(!hubEnabled2000())return;try{globalThis.parent.postMessage({channel:'course-hub',type,appId:HUB_APP_ID_2000,detail,at:new Date().toISOString()},'*');}catch(_error){}}
 function scheduleHubProgress2000(){if(!hubEnabled2000())return;clearTimeout(hubProgressTimer2000);hubProgressTimer2000=setTimeout(()=>sendHub2000('progress',hubDetail2000()),220);}
@@ -487,7 +464,7 @@ function progressVector2000(s){const n=normalizeState(s||{});return [Object.valu
 function newerState2000(a,b){const av=progressVector2000(a),bv=progressVector2000(b);for(let i=0;i<av.length;i++){if(av[i]!==bv[i])return av[i]>bv[i]?a:b;}return a;}
 function mergeUnique2000(a,b,limit,keyFn){const out=[],seen=new Set();[...(a||[]),...(b||[])].forEach(x=>{const k=keyFn?keyFn(x):JSON.stringify(x);if(!seen.has(k)){seen.add(k);out.push(x);}});out.sort((x,y)=>stamp2000(y?.date||y?.login||y?.createdAt)-stamp2000(x?.date||x?.login||x?.createdAt));return out.slice(0,limit);}
 function metaStamp2000(m){return Math.max(stamp2000(m?.resolvedDate),stamp2000(m?.lastCorrectDate),stamp2000(m?.lastWrongDate),stamp2000(m?.lastReviewedDate),stamp2000(m?.firstWrongDate));}
-function mergeDayLog2000(a,b){const o={...(a||{})};Object.entries(b||{}).forEach(([d,v])=>{const x=o[d]||{};o[d]={...v,...x,quizzes:Math.max(+x.quizzes||0,+v.quizzes||0),retests:Math.max(+x.retests||0,+v.retests||0),bestPct:Math.max(+x.bestPct||0,+v.bestPct||0),firstDone:[x.firstDone,v.firstDone].filter(Boolean).sort()[0]||null,lastStudied:[x.lastStudied,v.lastStudied].filter(Boolean).sort().pop()||null,lastMailAt:[x.lastMailAt,v.lastMailAt].filter(Boolean).sort().pop()||null,mailConfirmedAt:[x.mailConfirmedAt,v.mailConfirmedAt].filter(Boolean).sort().pop()||null};});return o;}
+function mergeDayLog2000(a,b){const o={...(a||{})};Object.entries(b||{}).forEach(([d,v])=>{const x=o[d]||{};o[d]={...v,...x,quizzes:Math.max(+x.quizzes||0,+v.quizzes||0),retests:Math.max(+x.retests||0,+v.retests||0),bestPct:Math.max(+x.bestPct||0,+v.bestPct||0),firstDone:[x.firstDone,v.firstDone].filter(Boolean).sort()[0]||null,lastStudied:[x.lastStudied,v.lastStudied].filter(Boolean).sort().pop()||null};});return o;}
 function mergeDaily2000(a,b){const o={...(a||{})};Object.entries(b||{}).forEach(([d,v])=>{const x=o[d]||{};o[d]={...v,...x,studied:Math.max(+x.studied||0,+v.studied||0),quizzed:Math.max(+x.quizzed||0,+v.quizzed||0),correct:Math.max(+x.correct||0,+v.correct||0),xp:Math.max(+x.xp||0,+v.xp||0)};});return o;}
 function mergeVocaStates2000(left,right){
  const a=normalizeState(left||{}),b=normalizeState(right||{}),chosen=newerState2000(a,b),base=JSON.parse(JSON.stringify(chosen)),other=chosen===a?b:a;
@@ -498,11 +475,10 @@ function mergeVocaStates2000(left,right){
  wrongIds.forEach(id=>{const am=a.wrongMeta[id]||{},bm=b.wrongMeta[id]||{};let chosen=metaStamp2000(am)>metaStamp2000(bm)?am:metaStamp2000(bm)>metaStamp2000(am)?bm:((am.reviewStage==='STABLE'||am.active===false)?am:bm);chosen={...chosen,totalWrongCount:Math.max(+am.totalWrongCount||0,+bm.totalWrongCount||0),reviewCount:Math.max(+am.reviewCount||0,+bm.reviewCount||0),resolvedCount:Math.max(+am.resolvedCount||0,+bm.resolvedCount||0)};const lastWrong=Math.max(stamp2000(am.lastWrongDate),stamp2000(bm.lastWrongDate));const resolved=Math.max(stamp2000(am.resolvedDate),stamp2000(bm.resolvedDate),stamp2000(am.lastCorrectDate),stamp2000(bm.lastCorrectDate));const stable=chosen.reviewStage==='STABLE'||chosen.active===false||resolved>=lastWrong&&resolved>0;chosen.active=!stable;if(stable){chosen.reviewStage='STABLE';chosen.nextReviewDate=null;}out.wrongMeta[id]=chosen;const count=Math.max(+a.wrong[id]||0,+b.wrong[id]||0);if(!stable&&count>0)out.wrong[id]=count;});
  out.dayLog=mergeDayLog2000(a.dayLog,b.dayLog);out.daily=mergeDaily2000(a.daily,b.daily);
  out.quizStat={done:Math.max(+a.quizStat.done||0,+b.quizStat.done||0),correct:Math.max(+a.quizStat.correct||0,+b.quizStat.correct||0)};out.xp=Math.max(+a.xp||0,+b.xp||0);out.streak=Math.max(+a.streak||0,+b.streak||0);out.lastDate=[a.lastDate,b.lastDate].filter(Boolean).sort().pop()||'';
- out.history=mergeUnique2000(a.history,b.history,500,x=>[x.date,x.day,x.type,x.correct,x.total].join('|'));out.sessions=mergeUnique2000(a.sessions,b.sessions,500,x=>[x.login,x.day,x.type,x.correct,x.total].join('|'));out.wrongHistory=mergeUnique2000(a.wrongHistory,b.wrongHistory,2000,x=>[x.date,x.id,x.event,x.phase].join('|'));out.mailLog=mergeUnique2000(a.mailLog,b.mailLog,200,x=>[x.date||x.sentAt,x.day,x.status].join('|'));
- const pend=[a.pendingCompletion,b.pendingCompletion].filter(Boolean).sort((x,y)=>stamp2000(y.createdAt)-stamp2000(x.createdAt))[0]||null;out.pendingCompletion=pend&&out.dayDone[pend.day]?null:pend;out.schemaVersion=APP_DATA_VERSION;out.updatedAt=new Date(Math.max(stamp2000(a.updatedAt),stamp2000(b.updatedAt),Date.now())).toISOString();return normalizeState(out);
+ out.history=mergeUnique2000(a.history,b.history,500,x=>[x.date,x.day,x.type,x.correct,x.total].join('|'));out.sessions=mergeUnique2000(a.sessions,b.sessions,500,x=>[x.login,x.day,x.type,x.correct,x.total].join('|'));out.wrongHistory=mergeUnique2000(a.wrongHistory,b.wrongHistory,2000,x=>[x.date,x.id,x.event,x.phase].join('|'));out.schemaVersion=APP_DATA_VERSION;out.updatedAt=new Date(Math.max(stamp2000(a.updatedAt),stamp2000(b.updatedAt),Date.now())).toISOString();return normalizeState(out);
 }
 function cloudEnvelope2000(state,writeId){return{app:'voca2000',student:'8081',schemaVersion:1,stateVersion:APP_DATA_VERSION,updatedAt:new Date().toISOString(),deviceId:cloudDeviceId2000(),writeId,state:JSON.parse(JSON.stringify(normalizeState(state)))};}
-function applyCloudState2000(next,message){cloud2000.applying=true;try{const merged=mergeVocaStates2000(S,next);const prev=localStorage.getItem(KEY);if(prev)localStorage.setItem(SNAPSHOT_KEY,prev);S=normalizeState(merged);localStorage.setItem(KEY,JSON.stringify(S));syncScheduleState();if(ROLE){renderSidebar();if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}if(message)toast(message);}finally{cloud2000.applying=false;}}
+function applyCloudState2000(next,message){cloud2000.applying=true;try{const merged=mergeVocaStates2000(S,next);const prev=localStorage.getItem(KEY);if(prev)localStorage.setItem(SNAPSHOT_KEY,prev);S=normalizeState(merged);localStorage.setItem(KEY,JSON.stringify(S));syncScheduleState();if(ROLE){renderSidebar();if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();}if(message)toast(message);}finally{cloud2000.applying=false;}}
 function scheduleCloudSave2000(force=false){if(cloud2000.applying)return;if(!cloud2000.ready||!cloud2000.ref){cloud2000.pending=true;return;}cloud2000.pending=false;clearTimeout(cloud2000.timer);const elapsed=Date.now()-cloud2000.lastWriteAt;const delay=force?100:Math.max(1800,12000-elapsed);cloud2000.timer=setTimeout(writeCloud2000,delay);}
 async function writeCloud2000(){if(!cloud2000.ready||cloud2000.writing||!cloud2000.ref)return;cloud2000.writing=true;const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;setCloudStatus2000('☁ 진도 저장 중','wait');try{await cloud2000.ref.transaction(current=>{const remote=current&&current.state?current.state:null;return cloudEnvelope2000(remote?mergeVocaStates2000(localSnapshot,remote):localSnapshot,writeId);});cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 클라우드 진도 저장됨','ok');}catch(e){console.warn('클라우드 저장 실패',e);cloud2000.pending=true;setCloudStatus2000('로컬 저장 · 연결 시 재동기화','local');}finally{cloud2000.writing=false;}}
 async function initCloudSync2000(){setCloudStatus2000('☁ 클라우드 진도 연결 중','wait');if(!window.firebase){setCloudStatus2000('클라우드 모듈 차단 · 로컬 저장','local');return false;}try{cloud2000.app=firebase.apps.length?firebase.app():firebase.initializeApp(FIREBASE_CONFIG);cloud2000.auth=firebase.auth();cloud2000.db=firebase.database();await cloud2000.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);if(cloud2000.auth.currentUser&&cloud2000.auth.currentUser.email!==CLOUD_STUDENT_EMAIL)await cloud2000.auth.signOut();if(!cloud2000.auth.currentUser)await cloud2000.auth.signInWithEmailAndPassword(CLOUD_STUDENT_EMAIL,CLOUD_STUDENT_PASSWORD);cloud2000.ref=cloud2000.db.ref(CLOUD_2000_PATH);const localSnapshot=normalizeState(JSON.parse(JSON.stringify(S)));const writeId=cloudDeviceId2000()+'-boot-'+Date.now().toString(36);cloud2000.lastWriteId=writeId;const result=await cloud2000.ref.transaction(current=>cloudEnvelope2000(current&&current.state?mergeVocaStates2000(localSnapshot,current.state):localSnapshot,writeId));const payload=result.snapshot.val();if(payload&&payload.state)applyCloudState2000(payload.state,'클라우드 누적 진도를 불러왔습니다');cloud2000.ready=true;cloud2000.lastWriteAt=Date.now();setCloudStatus2000('✓ 모든 기기 진도 동기화','ok');cloud2000.ref.on('value',snap=>{const p=snap.val();if(!p||!p.state||p.writeId===cloud2000.lastWriteId||cloud2000.writing)return;applyCloudState2000(p.state,'다른 기기의 최신 진도를 반영했습니다');setCloudStatus2000('✓ 최신 진도 반영됨','ok');});if(cloud2000.pending)scheduleCloudSave2000(true);return true;}catch(e){console.error('Firebase 진도 연결 실패',e);setCloudStatus2000('클라우드 인증 확인 필요 · 로컬 저장','error');return false;}}
@@ -527,23 +503,20 @@ const defState=()=>({
  config:{quizMode:'mc',enPct:50,quizCount:0,saThreshold:80},
  wrongDetail:{},
  wrongMeta:{},   // id -> 누적 오답 횟수·복습 일정·정복 이력
- wrongHistory:[],// 최근 오답 발생/재시험 정답/정복 이벤트 감사 로그
- mailLog:[],
- pendingCompletion:null
+ wrongHistory:[]// 최근 오답 발생/재시험 정답/정복 이벤트 감사 로그
 });
 let S;let saveFailed=false;
 function obj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
 function parseStore(key){try{const raw=localStorage.getItem(key);if(!raw)return null;const o=JSON.parse(raw);return obj(o)?o:null;}catch(e){return null;}}
 function validWordId(id){const n=+id;return Number.isInteger(n)&&!!byId[n];}
 function cleanWordMap(map,mode='number'){const out={};if(!obj(map))return out;Object.keys(map).forEach(id=>{if(!validWordId(id))return;const v=map[id];if(mode==='boolean'){if(!!v)out[+id]=true;}else{const n=Math.max(0,Number(v)||0);if(n>0)out[+id]=n;}});return out;}
-function normalizeCompletionPayload(value){if(!obj(value))return null;const day=Math.max(1,Math.min(DAYS,+value.day||1));const main=obj(value.main)?value.main:null;if(!main)return null;const status=['ready','sending','error','sent'].includes(value.status)?value.status:'ready';return{day,main,retry:obj(value.retry)?value.retry:null,status:status==='sending'?'ready':status,createdAt:value.createdAt||new Date().toISOString(),sentAt:value.sentAt||null,error:typeof value.error==='string'?value.error:''};}
 function normalizeState(raw){const d=defState(),o=obj(raw)?raw:{};const n={...d,...o};
  n.config={...d.config,...(obj(o.config)?o.config:{})};
  n.seen=cleanWordMap(o.seen,'boolean');n.fav=cleanWordMap(o.fav,'boolean');n.mastered=cleanWordMap(o.mastered);n.wrong=cleanWordMap(o.wrong);
- n.dayDone={};if(obj(o.dayDone))Object.keys(o.dayDone).forEach(k=>{const day=+k;if(day>=1&&day<=DAYS&&o.dayDone[k])n.dayDone[day]=true;});n.daily=obj(o.daily)?o.daily:{};n.dayLog=obj(o.dayLog)?o.dayLog:{};n.wrongDetail=obj(o.wrongDetail)?o.wrongDetail:{};n.wrongMeta=obj(o.wrongMeta)?o.wrongMeta:{};
+ n.dayDone={};if(obj(o.dayDone))Object.keys(o.dayDone).forEach(k=>{const day=+k;if(day>=1&&day<=DAYS&&o.dayDone[k])n.dayDone[day]=true;});n.daily=obj(o.daily)?o.daily:{};n.dayLog=obj(o.dayLog)?o.dayLog:{};Object.values(n.dayLog).forEach(log=>{if(obj(log))['mailConfirmedAt','lastMailAt','mailRecipient','mailMethod','mailReportId','mailAcceptedAt','mailDeliveryStatus','mailDeliveryVerified','mailAuditSavedAt','mailAuditError'].forEach(k=>delete log[k]);});n.wrongDetail=obj(o.wrongDetail)?o.wrongDetail:{};n.wrongMeta=obj(o.wrongMeta)?o.wrongMeta:{};
  n.quizStat=obj(o.quizStat)?{done:Math.max(0,+o.quizStat.done||0),correct:Math.max(0,+o.quizStat.correct||0)}:{done:0,correct:0};
- n.history=Array.isArray(o.history)?o.history.slice(0,500):[];n.sessions=Array.isArray(o.sessions)?o.sessions.slice(0,500):[];n.mailLog=Array.isArray(o.mailLog)?o.mailLog.slice(0,200):[];n.wrongHistory=Array.isArray(o.wrongHistory)?o.wrongHistory.slice(0,2000):[];
- n.streak=Math.max(0,+o.streak||0);n.xp=Math.max(0,+o.xp||0);n.lastDate=typeof o.lastDate==='string'?o.lastDate:'';n.pendingCompletion=normalizeCompletionPayload(o.pendingCompletion);
+ n.history=Array.isArray(o.history)?o.history.slice(0,500):[];n.sessions=Array.isArray(o.sessions)?o.sessions.slice(0,500):[];n.wrongHistory=Array.isArray(o.wrongHistory)?o.wrongHistory.slice(0,2000):[];
+ n.streak=Math.max(0,+o.streak||0);n.xp=Math.max(0,+o.xp||0);n.lastDate=typeof o.lastDate==='string'?o.lastDate:'';delete n['mail'+'Log'];delete n['pending'+'Completion'];
  Object.keys(n.wrongMeta).forEach(id=>{if(!validWordId(id))delete n.wrongMeta[id];});
  Object.keys(n.wrong).forEach(id=>{const w=byId[+id],m=n.wrongMeta[id]=obj(n.wrongMeta[id])?n.wrongMeta[id]:{};m.firstWrongDate=m.firstWrongDate||n.lastDate||today();m.originDate=m.originDate||m.firstWrongDate;m.lastWrongDate=m.lastWrongDate||m.firstWrongDate;m.reviewStage=['D1','D3','D6','FOCUS','STABLE'].includes(m.reviewStage)?m.reviewStage:'D1';m.nextReviewDate=m.nextReviewDate||(m.reviewStage==='D1'?datePlus(m.originDate,1):datePlus(today(),1));m.reviewCount=Math.max(0,+m.reviewCount||0);m.totalWrongCount=Math.max(+m.totalWrongCount||0,n.wrong[id]||0);m.sourceDay=+m.sourceDay||w[1];m.active=m.reviewStage!=='STABLE';});
  Object.keys(n.wrongMeta).forEach(id=>{const m=n.wrongMeta[id];if(!n.wrong[id]){m.active=false;if(m.reviewStage!=='STABLE')m.reviewStage='STABLE';m.nextReviewDate=null;}});
@@ -552,12 +525,23 @@ function load(){const primary=parseStore(KEY),snapshot=parseStore(SNAPSHOT_KEY),
  if(!S._migrated_v4){if(S.config.quizCount===10)S.config.quizCount=0;S._migrated_v4=true;}
  if(!S._migrated_18day){
   const remap=d=>d>0?Math.max(1,Math.min(DAYS,Math.ceil((+d||1)*DAYS/30))):0;
-  const oldDone={...S.dayDone};const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;t.lastMailAt=v.lastMailAt||t.lastMailAt;t.mailConfirmedAt=v.mailConfirmedAt||t.mailConfirmedAt;});
+  const oldDone={...S.dayDone};const merged={};Object.keys(S.dayLog||{}).forEach(k=>{const nd=remap(k),v=S.dayLog[k]||{};if(!nd)return;const t=merged[nd]||(merged[nd]={quizzes:0,retests:0,bestPct:0});t.quizzes+=(v.quizzes||0);t.retests+=(v.retests||0);t.bestPct=Math.max(t.bestPct||0,v.bestPct||0);t.firstDone=t.firstDone||v.firstDone;t.lastStudied=v.lastStudied||t.lastStudied;});
   S.dayLog=merged;(S.sessions||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});(S.history||[]).forEach(x=>{if(x.day){x.legacyDay=x.legacyDay||x.day;x.day=remap(x.day);}});S.dayDone={};Object.keys(oldDone).forEach(k=>{if(oldDone[k])S.dayDone[remap(k)]=true;});S._migrated_18day=true;
  }
- if(!S._mailGateV7Migrated){
-  let contiguous=true;for(let d=1;d<=DAYS;d++){const log=S.dayLog[d]||{};const pendingForDay=S.pendingCompletion&&S.pendingCompletion.day===d&&S.pendingCompletion.status!=='sent';if(!pendingForDay&&(log.mailConfirmedAt||log.lastMailAt))S.dayDone[d]=true;const p=dayProgress(d);if(sourceSchema<7&&contiguous&&!pendingForDay&&p.total>0&&p.seen===p.total){S.dayDone[d]=true;log.legacyCompletedAt=log.legacyCompletedAt||new Date().toISOString();S.dayLog[d]=log;}else if(!S.dayDone[d])contiguous=false;}
-  S._mailGateV7Migrated=true;
+ if(!S._progressOnlyV10_5Migrated){
+  const legacyPending=obj(source['pending'+'Completion'])?source['pending'+'Completion']:null;
+  if(legacyPending&&legacyPending.day>=1&&legacyPending.day<=DAYS){
+    S.dayDone[legacyPending.day]=true;
+    S.dayLog[legacyPending.day]=S.dayLog[legacyPending.day]||{};
+    S.dayLog[legacyPending.day].completedAt=S.dayLog[legacyPending.day].completedAt||legacyPending.sentAt||legacyPending.createdAt||new Date().toISOString();
+  }
+  for(let d=1;d<=DAYS;d++){
+    const p=dayProgress(d),log=S.dayLog[d]||{};
+    if((log.mailConfirmedAt||log.lastMailAt)&&p.total>0&&p.seen===p.total){S.dayDone[d]=true;log.completedAt=log.completedAt||log.mailConfirmedAt||log.lastMailAt;}
+    ['mailConfirmedAt','lastMailAt','mailRecipient','mailMethod','mailReportId','mailAcceptedAt','mailDeliveryStatus','mailDeliveryVerified','mailAuditSavedAt','mailAuditError'].forEach(k=>delete log[k]);
+    S.dayLog[d]=log;
+  }
+  delete S['pending'+'Completion'];delete S['mail'+'Log'];S._progressOnlyV10_5Migrated=true;
  }
  save(true);}
 function save(skipSnapshot=false){try{S.schemaVersion=APP_DATA_VERSION;S.updatedAt=new Date().toISOString();const payload=JSON.stringify(S);const prev=localStorage.getItem(KEY);if(!skipSnapshot&&prev){try{const old=JSON.parse(prev);if(obj(old))localStorage.setItem(SNAPSHOT_KEY,prev);}catch(e){}}localStorage.setItem(KEY,payload);saveFailed=false;if(!cloud2000.applying)scheduleCloudSave2000();scheduleHubProgress2000();return true;}catch(e){console.error('학습 데이터 저장 실패',e);saveFailed=true;const t=document.querySelector&&document.querySelector('#toast');if(t)toast('저장 공간 오류: 백업 파일을 내려받으세요');return false;}}
@@ -590,7 +574,7 @@ function scheduleInitialD1(w){const m=ensureWrongMeta(w);if(!m.active||m.reviewS
 function routeScheduledCorrect(w,m){const stage=m.reviewStage||'D1';m.lastReviewedDate=today();m.lastCorrectDate=today();m.reviewCount=(m.reviewCount||0)+1;if(stage==='D1'){m.reviewStage='D3';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),3));m.active=true;}else if(stage==='D3'){m.reviewStage='D6';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),6));m.active=true;}else if(stage==='D6'){resolveWrong(w[0],'D+6-stable');}else if(stage==='FOCUS'){m.focusCorrectStreak=(m.focusCorrectStreak||0)+1;if(m.focusCorrectStreak>=2)resolveWrong(w[0],'focus-stable');else{m.nextReviewDate=datePlus(today(),1);m.active=true;}}}
 function routeScheduledWrong(w,m){const stage=m.reviewStage||'D1';m.reviewCount=(m.reviewCount||0)+1;m.focusCorrectStreak=0;if(stage==='D1'){m.reviewStage='D3';m.nextReviewDate=futureReviewDate(datePlus(m.originDate||today(),3));}else{m.reviewStage='FOCUS';m.nextReviewDate=datePlus(today(),1);}m.active=true;return stage;}
 function dueWrongList(){const t=today();const rank={D1:1,D3:2,D6:3,FOCUS:4};return Object.keys(S.wrongMeta||{}).filter(id=>{const m=S.wrongMeta[id];return validWordId(id)&&m&&m.active&&m.nextReviewDate&&m.nextReviewDate<=t&&S.wrong[id]>0;}).sort((a,b)=>{const A=S.wrongMeta[a],B=S.wrongMeta[b];return String(A.nextReviewDate).localeCompare(String(B.nextReviewDate))||(rank[A.reviewStage]||9)-(rank[B.reviewStage]||9);}).map(id=>byId[+id]).filter(Boolean);}
-function syncScheduleState(){S.wrongMeta=S.wrongMeta||{};S.dayDone=obj(S.dayDone)?S.dayDone:{};Object.keys(S.wrong||{}).forEach(id=>{if(S.wrong[id]>0){const w=byId[+id];if(w){const m=ensureWrongMeta(w);if(!m.nextReviewDate&&m.reviewStage!=='STABLE')m.nextReviewDate=datePlus(today(),1);m.active=m.reviewStage!=='STABLE';}}});for(let d=1;d<=DAYS;d++){const log=S.dayLog[d]||{};if(log.mailConfirmedAt)S.dayDone[d]=true;}save();}
+function syncScheduleState(){S.wrongMeta=S.wrongMeta||{};S.dayDone=obj(S.dayDone)?S.dayDone:{};Object.keys(S.wrong||{}).forEach(id=>{if(S.wrong[id]>0){const w=byId[+id];if(w){const m=ensureWrongMeta(w);if(!m.nextReviewDate&&m.reviewStage!=='STABLE')m.nextReviewDate=datePlus(today(),1);m.active=m.reviewStage!=='STABLE';}}});save();}
 function touchStreak(){const t=today();if(S.lastDate===t)return;
  const y=new Date();y.setDate(y.getDate()-1);const ys=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
  S.streak=(S.lastDate===ys)?S.streak+1:1;S.lastDate=t;save();}
@@ -611,7 +595,7 @@ function dayCumulativeWrongCount(day){return wordsOf(day).reduce((sum,w)=>sum+Ma
 function logWrongEvent(w,event,phase,note=''){S.wrongHistory=S.wrongHistory||[];const m=S.wrongMeta[w[0]]||{};S.wrongHistory.unshift({date:new Date().toISOString(),id:w[0],word:w[3],day:w[1],event,phase:phase||'',note,activeCount:S.wrong[w[0]]||0,totalWrongCount:m.totalWrongCount||0});if(S.wrongHistory.length>2000)S.wrongHistory.length=2000;}
 function resolveWrong(id,phase='manual-clear'){const w=byId[+id];if(!w)return;const m=S.wrongMeta[id]||(S.wrongMeta[id]={});S.wrong[id]=0;m.active=false;m.reviewStage='STABLE';m.nextReviewDate=null;m.resolvedDate=today();m.lastCorrectDate=today();m.resolvedCount=(m.resolvedCount||0)+1;logWrongEvent(w,'resolved',phase);save();}
 function dayProgress(d){const ws=wordsOf(d);return{seen:ws.filter(w=>S.seen[w[0]]).length,total:ws.length};}
-function firstUnfinishedDay(){if(S.pendingCompletion)return S.pendingCompletion.day;for(let d=1;d<=DAYS;d++){if(!S.dayDone[d])return d;}return DAYS;}
+function firstUnfinishedDay(){for(let d=1;d<=DAYS;d++){if(!S.dayDone[d])return d;}return DAYS;}
 function currentDay(){return firstUnfinishedDay();}
 
 /* ===== 한글 유사도 (주관식 채점) ===== */
@@ -694,7 +678,6 @@ async function enterApp(){
  buildSidebar();buildTopbar();go('Home');
  await Promise.race([cloudPromise,new Promise(resolve=>setTimeout(()=>resolve(false),10000))]);
  if(cur==='Home')renderHome();else if(ROLE==='admin'&&cur==='Admin')renderAdmin();
- if(ROLE==='learner'&&S.pendingCompletion)setTimeout(restorePendingCompletionGate,80);
  if(ROLE==='learner')sendHub2000('ready',hubDetail2000());
 }
 
@@ -726,7 +709,7 @@ function renderSidebar(){if(ROLE==='learner'){const L=levelInfo();
 let cur='Home';
 const TITLES={Home:['대시보드',''],Study:['학습 (DAY)','18일 완성 · 하루 111~112단어'],Quiz:['퀴즈','오늘의 시험'],
  Review:['오답노트','틀린 단어 정복'],Admin:['학습 리포트','진도 · 이력 · 출력'],Logs:['로그인 기록','접속 · 시험 시간'],Config:['시험 설정','출제 방식 관리']};
-function go(tab){if(ROLE==='learner'&&S.pendingCompletion&&tab!=='Home'){restorePendingCompletionGate();return;}cur=tab;document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#v'+tab).classList.add('on');
+function go(tab){cur=tab;document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#v'+tab).classList.add('on');
  document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('on',n.dataset.nav===tab));
  $('#pgTitle').textContent=TITLES[tab][0];$('#pgSub').textContent=TITLES[tab][1];window.scrollTo(0,0);
  ({Home:renderHome,Study:renderStudy,Quiz:renderQuiz,Review:renderReview,Admin:renderAdmin,Logs:renderLogs,Config:renderConfig})[tab]();renderSidebar();}
@@ -745,7 +728,7 @@ function renderHomeLearner(){const cd=currentDay();const dp=dayProgress(cd);cons
   ${due?`<div class="mail-note" style="border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.08)">🔁 <b style="color:var(--red)">예약 복습</b> · D+1 ${stageCounts.D1||0} · D+3 ${stageCounts.D3||0} · D+6 ${stageCounts.D6||0} · 집중 ${stageCounts.FOCUS||0}</div>`:''}
   <div class="grid g-3">
     <div class="card"><div class="stat-lbl">전체 진도</div><div class="stat-big grad-txt">${pct}%</div><div class="mini"><span class="num">${seenCount()}</span>/${TOTAL} 단어</div><div class="progline"><i style="width:${pct}%"></i></div></div>
-    <div class="card"><div class="stat-lbl">완료 DAY</div><div class="stat-big grad-pink">${Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length}<span style="font-size:20px">/${DAYS}</span></div><div class="mini">관리자 보고 전송 완료 기준</div></div>
+    <div class="card"><div class="stat-lbl">완료 DAY</div><div class="stat-big grad-pink">${Object.keys(S.dayDone).filter(d=>S.dayDone[d]).length}<span style="font-size:20px">/${DAYS}</span></div><div class="mini">DAY 학습 진도 완료 기준</div></div>
     <div class="card"><div class="stat-lbl">오답</div><div class="stat-big grad-lime">${wrongList().length}</div><div class="mini">오늘 복습 예정 ${due}개</div></div>
   </div>
   <div class="grid g-3" style="margin-top:18px">
@@ -866,7 +849,7 @@ function pickDayForQuiz(){const cd=currentDay();
 // 오늘의 시험: D+1·D+3·D+6 예약 복습 → 본 DAY 시험 순서로 진행
 function buildQuestions(pool,forceAll=false){const N=forceAll?pool.length:(S.config.quizCount>0?Math.min(S.config.quizCount,pool.length):pool.length);const chosen=shuffle(pool).slice(0,N);
  const enCnt=Math.round(N*S.config.enPct/100);const dirs=shuffle([...Array(enCnt).fill('en'),...Array(N-enCnt).fill('ko')]);return shuffle(chosen).map((w,i)=>({w,dir:dirs[i]||'en'}));}
-function startDayFlow(day){if(S.pendingCompletion){restorePendingCompletionGate();return;}touchStreak();const due=dueWrongList();if(due.length){startScheduledReview(due,day);return;}startTodayQuiz(day);}
+function startDayFlow(day){touchStreak();const due=dueWrongList();if(due.length){startScheduledReview(due,day);return;}startTodayQuiz(day);}
 function startScheduledReview(list,resumeDay){const qs=buildQuestions(uniqueWords(list),true);SESS={mode:S.config.quizMode,day:0,originDay:resumeDay,resumeDay,phase:'scheduled',qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
  $('#pgTitle').textContent='예약 오답 복습';$('#pgSub').textContent=`D+1·D+3·D+6 대상 ${qs.length}개를 복습한 뒤 DAY ${resumeDay} 진행`;SESS.mode==='sa'?renderSA():renderMC();}
 function startTodayQuiz(day){touchStreak();const qs=buildQuestions(wordsOf(day),true);SESS={mode:S.config.quizMode,day,originDay:day,phase:'main',qs,i:0,correct:0,combo:0,maxCombo:0,wrongThis:[],gained:0,startMs:Date.now(),blocked:false};
@@ -973,49 +956,16 @@ function finishQuiz(){clearWrongReveal();unbindKeys();if(saEnterHandler){documen
 }
 function renderSimpleResult(result){const em=result.pct>=90?'🏆':result.pct>=70?'🎯':result.pct>=50?'💪':'📚';stage('vQuiz',`<div class="result"><div class="em">${em}</div><div class="pct grad-txt">${result.pct}%</div><div class="score"><span class="num">${result.correct}</span> / <span class="num">${result.total}</span> 정답</div><div style="margin:18px 0"><span class="chip lime">+${result.gained} XP</span></div><button class="btn btn-hero wfull" onclick="go('Home')">홈으로</button></div>`);}
 function isDayLearningComplete(day){const dp=dayProgress(day);return dp.total>0&&dp.seen>=dp.total;}
-let pendingCompletion=S.pendingCompletion||null;
-function renderDayFinal(main,retry){const remaining=retry?retry.wrongThis.length:0;const retryText=retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음';stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">${courseDayLabel(main.day)} 학습 종료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="mail-note"><b>아래 관리자 이메일 전송 버튼을 직접 눌러야 DAY가 최종 완료됩니다.</b></div></div>`);showCompletionGate({day:main.day,main,retry,status:'ready',createdAt:new Date().toISOString()},{autoSend:false});}
-function completionReportText(p){const dp=dayProgress(p.day),dayWrong=wordsOf(p.day).filter(w=>S.wrong[w[0]]>0).length,retry=p.retry;return `[2000_18DAY · DAY ${p.day} 종료 보고]
-보고 시각: ${new Date().toLocaleString('ko-KR')}
-학습 진도: ${dp.seen}/${dp.total} (${Math.round(dp.seen/dp.total*100)}%)
-본 시험: ${p.main.correct}/${p.main.total} (${p.main.pct}%)
-본 시험 오답: ${p.main.wrongThis.length}개
-즉시 오답 재시험: ${retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음'}
-현재 DAY 미해결 오답: ${dayWrong}개
-DAY 누적 오답 발생: ${dayCumulativeWrongCount(p.day)}회
-전체 활성 오답: ${wrongList().length}개
-전체 누적 오답 발생: ${cumulativeWrongCount()}회
-정복한 오답 단어: ${conqueredWrongCount()}개
-오늘 D+1·D+3·D+6 복습 대상: ${dueWrongList().length}개
-누적 진도: ${seenCount()}/${TOTAL}
-누적 정답률: ${S.quizStat.done?Math.round(S.quizStat.correct/S.quizStat.done*100):0}%`;}
-function completionPayload(p){const pct=Math.round(seenCount()/TOTAL*100),tot=S.quizStat.done,accur=tot?Math.round(S.quizStat.correct/tot*100):0,L=levelInfo(),text=completionReportText(p);return{report_id:`wm2000-day${p.day}-${p.createdAt||new Date().toISOString()}`,email:ADMIN_EMAIL,to_email:ADMIN_EMAIL,user_name:'학습자',course_name:'수능 필수 WORD MASTER 2000',day_label:courseDayLabel(p.day),scheduled_date:courseSchedule(p.day).iso,delivery_status:'provider-accepted',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:text,day:p.day,day_report:text,report_text:text,message:text,summary:{words:p.main.total,accuracy:p.main.pct,wrong:p.main.wrongThis.length,active_wrong:wrongList().length,cumulative_wrong:cumulativeWrongCount()}};}
-function showCompletionGate(payload,options={}){
- if(!payload||!isDayLearningComplete(payload.day)){toast('DAY 전체 단어 학습 후 관리자 보고를 전송할 수 있습니다.');return;}
- const existing=document.querySelector('.completion-gate');if(existing)existing.remove();
- pendingCompletion=normalizeCompletionPayload(payload)||payload;S.pendingCompletion=pendingCompletion;save();
- const retry=pendingCompletion.retry,status=pendingCompletion.status||'ready';
- const gate=el('div','completion-gate',`<div class="completion-gate-card safe-bottom" role="dialog" aria-modal="true" aria-labelledby="completionGateTitle">
-  <div class="completion-gate-title" id="completionGateTitle">DAY ${pendingCompletion.day} 종료 보고</div>
-  <div class="completion-required">관리자 보고서 이메일 전송 필수</div>
-  <div class="completion-incomplete">${status==='sent'?'전송 확인 완료':'현재 DAY는 아직 미완료입니다'}</div>
-  <div class="completion-lock">전송 요청 성공 전에는 다음 DAY 이동과 완료 확정이 잠깁니다.<br>${courseDayLabel(pendingCompletion.day)} · ${ADMIN_EMAIL}</div>
-  <div class="completion-summary"><div><span class="mini">본 시험</span><b>${pendingCompletion.main.pct}%</b></div><div><span class="mini">오답 재시험</span><b>${retry?retry.pct+'%':'-'}</b></div><div><span class="mini">현재 오답</span><b>${wordsOf(pendingCompletion.day).filter(w=>S.wrong[w[0]]>0).length}</b></div></div>
-  <div class="completion-mail-instruction">학습자가 아래 큰 버튼을 직접 눌러야 관리자 보고가 전송되고 DAY가 완료됩니다.</div>
-  <div class="mail-status ${status==='sent'?'ok':status==='error'?'err':''}" id="completionMailStatus" aria-live="assertive">${status==='sent'?`전송 요청 접수 완료: ${ADMIN_EMAIL}`:status==='error'?(pendingCompletion.error||'전송에 실패했습니다. 다시 시도하세요.'):'버튼을 눌러 관리자 보고서를 전송하십시오.'}</div>
-  <div class="completion-gate-actions">
-   <button class="btn btn-hero wfull" id="completionMailBtn" onclick="sendCompletionMail()" ${status==='sent'?'style="display:none"':''}>📧 필수: 관리자에게 이메일 보내고 DAY 완료</button>
-   <button class="btn btn-lime wfull" style="margin-top:10px;${status==='sent'?'display:inline-flex':'display:none'}" id="completionDoneBtn" onclick="closeCompletionGate()">전송 확인 완료 · 홈으로</button>
-  </div>
- </div>`);
- document.body.appendChild(gate);
- sendHub2000('mail-required',hubDetail2000(pendingCompletion.day));
- requestAnimationFrame(()=>{const btn=$('#completionMailBtn');if(btn&&status!=='sent'){btn.scrollIntoView({block:'end',behavior:'instant'});btn.focus();}});
+function renderDayFinal(main,retry){
+ const remaining=retry?retry.wrongThis.length:0,retryText=retry?`${retry.correct}/${retry.total} (${retry.pct}%)`:'해당 없음';
+ if(!isDayLearningComplete(main.day)){toast('DAY 전체 단어 학습을 먼저 완료하세요.');return;}
+ const now=new Date().toISOString();
+ S.dayDone[main.day]=true;S.dayLog[main.day]=S.dayLog[main.day]||{};
+ S.dayLog[main.day].completedAt=S.dayLog[main.day].completedAt||now;
+ S.dayLog[main.day].completionAccuracy=main.pct;S.dayLog[main.day].completionRetryAccuracy=retry?retry.pct:null;
+ delete S['pending'+'Completion'];save();syncScheduleState();notifyHubComplete2000(main.day);renderSidebar();
+ stage('vQuiz',`<div class="result"><div class="em">${remaining?'💪':'🏆'}</div><div class="score">${courseDayLabel(main.day)} 학습 완료</div><div class="pct grad-txt">${main.pct}%</div><div class="mini" style="margin:10px 0 18px">본 시험 ${main.correct}/${main.total} · 오답 재시험 ${retryText}</div><div class="card" style="margin:18px 0"><b>진도가 안전하게 저장되었습니다.</b><div class="mini" style="margin-top:6px">학습 완료 상태가 클라우드와 통합 허브에 반영됩니다.</div></div><button class="btn btn-lime wfull" onclick="go('Home')">완료 확인 · 홈으로</button></div>`);
 }
-async function sendDayReportTransport(payload){let lastError=null;try{const response=await fetch('/.netlify/functions/send-day-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(response.ok){const body=await response.json().catch(()=>({ok:true}));if(body.ok!==false)return{method:'netlify'};throw new Error(body.reason||'Netlify 전송 실패');}throw new Error(`Netlify ${response.status}`);}catch(e){lastError=e;}if(!emailJSReady)initEmailJS();if(window.emailjs&&emailJSReady){try{await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,payload);return{method:'emailjs'};}catch(e){lastError=e;}}throw lastError||new Error('사용 가능한 메일 전송 경로가 없습니다.');}
-async function sendCompletionMail(){if(!pendingCompletion)return;const st=$('#completionMailStatus'),btn=$('#completionMailBtn');if(!isDayLearningComplete(pendingCompletion.day)){S.dayDone[pendingCompletion.day]=false;pendingCompletion.status='error';pendingCompletion.error='DAY 전체 단어 학습이 완료되지 않아 보고를 전송할 수 없습니다.';S.pendingCompletion=pendingCompletion;save();if(st){st.className='mail-status err';st.textContent=pendingCompletion.error;}if(btn)btn.disabled=false;return;}if(!st||!btn)return;btn.disabled=true;btn.textContent='관리자 보고서 전송 중...';pendingCompletion.status='sending';pendingCompletion.error='';S.pendingCompletion=pendingCompletion;save();st.className='mail-status';st.textContent='관리자에게 DAY 보고서를 전송하고 있습니다...';try{const payload=completionPayload(pendingCompletion);const sent=await sendDayReportTransport(payload);const now=new Date().toISOString();const audit=await saveVocaMailAudit(payload,sent.method,now);S.mailLog.unshift({date:now,day:pendingCompletion.day,method:sent.method,reportId:audit.reportId,recipient:audit.recipient,status:audit.status});if(S.mailLog.length>100)S.mailLog.length=100;S.dayLog[pendingCompletion.day]=S.dayLog[pendingCompletion.day]||{};S.dayLog[pendingCompletion.day].lastMailAt=now;S.dayLog[pendingCompletion.day].mailConfirmedAt=now;S.dayDone[pendingCompletion.day]=true;pendingCompletion.status='sent';pendingCompletion.sentAt=now;S.pendingCompletion=pendingCompletion;save();notifyHubComplete2000(pendingCompletion.day);st.className='mail-status ok';st.textContent=`전송 요청 접수 완료 ✓ ${audit.recipient} · ${audit.method} · ${audit.reportId}`;btn.style.display='none';$('#completionDoneBtn').style.display='inline-flex';renderSidebar();}catch(e){console.error(e);pendingCompletion.status='error';pendingCompletion.error='전송에 실패했습니다. 네트워크와 EmailJS 설정을 확인한 뒤 다시 시도하세요.';S.pendingCompletion=pendingCompletion;S.dayDone[pendingCompletion.day]=false;save();btn.disabled=false;btn.textContent='📧 전송 실패 · 관리자 이메일 다시 보내기';st.className='mail-status err';st.textContent=pendingCompletion.error;btn.scrollIntoView({block:'end'});btn.focus();}}
-function closeCompletionGate(){if(!pendingCompletion||pendingCompletion.status!=='sent'){const st=$('#completionMailStatus');if(st){st.className='mail-status err';st.textContent='관리자 이메일 전송 성공 전에는 완료할 수 없습니다.';}return;}const g=document.querySelector('.completion-gate');if(g)g.remove();S.pendingCompletion=null;pendingCompletion=null;save();syncScheduleState();go('Home');}
-function restorePendingCompletionGate(){if(!S.pendingCompletion)return;pendingCompletion=normalizeCompletionPayload(S.pendingCompletion);S.pendingCompletion=pendingCompletion;showCompletionGate(pendingCompletion,{autoSend:false});}
 let keyHandler=null;
 function bindKeys(){unbindKeys();keyHandler=e=>{const o=$('#opts');if(!o||o.dataset.lock||(SESS&&SESS.blocked))return;const n=parseInt(e.key);if(n>=1&&n<=4){const b=o.querySelectorAll('.opt')[n-1];if(b)b.click();}};document.addEventListener('keydown',keyHandler);}
 function unbindKeys(){if(keyHandler){document.removeEventListener('keydown',keyHandler);keyHandler=null;}}
@@ -1145,7 +1095,6 @@ function fmtFull(iso){const d=new Date(iso);return `${d.getMonth()+1}/${d.getDat
 /* ===== ADMIN 리포트 ===== */
 function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const activeDays=Object.keys(S.daily).length;
  $('#vAdmin').innerHTML=`
-  <div class="mail-note">📮 각 예정일의 DAY 종료 시 <b>진행내역·본 시험·오답 재시험 결과</b>가 <b>${ADMIN_EMAIL}</b> 로 필수 전송됩니다. 이 화면에서는 누적 리포트를 별도로 보낼 수 있습니다.</div>
   <div class="admin-grid">
     <div class="akpi"><div class="lbl">전체 진도</div><div class="v grad-txt">${pct}%</div></div>
     <div class="akpi"><div class="lbl">완전 암기</div><div class="v grad-lime">${masteredCount()}</div></div>
@@ -1162,7 +1111,7 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
     <div style="max-height:340px;overflow-y:auto"><table><thead><tr><th>DAY·날짜</th><th>진도</th><th>학습률</th><th>시험</th><th>최고점</th><th>활성 오답</th><th>누적 오답</th><th>상태</th><th>출력</th></tr></thead>
     <tbody>${Array.from({length:DAYS},(_,k)=>{const d=k+1;const dp=dayProgress(d);const lg=S.dayLog[d]||{};const p=Math.round(dp.seen/dp.total*100);
       const wrongN=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;
-      const st=S.dayDone[d]?'<span class="chip green">완료·보고됨</span>':(S.pendingCompletion&&S.pendingCompletion.day===d)?'<span class="chip amber">보고 대기</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
+      const st=S.dayDone[d]?'<span class="chip green">완료</span>':dp.seen>0?'<span class="chip iris">진행</span>':'<span class="chip gray">-</span>';
       return `<tr><td class="num" style="font-weight:700">${courseDayLabel(d)}</td><td class="num">${dp.seen}/${dp.total}</td>
         <td><div class="bar-cell"><div class="track"><i style="width:${p}%"></i></div><span class="num" style="color:var(--txt2);font-size:12px">${p}%</span></div></td>
         <td class="num">${lg.quizzes||0}회</td><td class="num">${lg.bestPct?lg.bestPct+'%':'-'}</td>
@@ -1177,10 +1126,9 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
        <td class="num">${h.correct}/${h.total}</td><td class="num grad-lime" style="font-weight:700">+${h.xp}</td></tr>`;}).join('')}</tbody></table></div>`:'<div class="empty"><div class="i">📭</div>학습 이력이 없어요</div>'}
   </div>
   <div class="card">
-    <div style="font-family:var(--disp);font-weight:700;font-size:17px;margin-bottom:6px">보고서 내보내기 · 전송</div>
-    <div class="mini" style="margin-bottom:16px">관리자(${ADMIN_EMAIL})에게 전달</div>
+    <div style="font-family:var(--disp);font-weight:700;font-size:17px;margin-bottom:6px">진도 백업 · 내보내기</div>
+    <div class="mini" style="margin-bottom:16px">학습 진도와 오답 기록만 관리합니다.</div>
     <div class="admin-actions">
-      <button class="btn btn-hero" onclick="mailReport()">📧 보고서 발송</button>
       <button class="btn btn-ghost" onclick="downloadCSV()">⬇ DAY별 CSV</button>
       <button class="btn btn-ghost" onclick="downloadLogsCSV()">⬇ 로그인기록 CSV</button>
       <button class="btn btn-ghost" onclick="downloadWrongHistoryCSV()">⬇ 오답이력 CSV</button>
@@ -1190,35 +1138,10 @@ function renderAdmin(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.
   </div>`;
 }
 
-/* ===== 리포트/이메일/내보내기 ===== */
-function reportSummary(){const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const doneDays=[];for(let d=1;d<=DAYS;d++)if(S.dayDone[d])doneDays.push(d);
- return `[2000_18DAY 누적 학습 리포트]
-생성일: ${new Date().toLocaleString('ko-KR')}
-─────────────────────────
-■ 전체 진도: ${pct}% (${seenCount()}/${TOTAL})
-■ 완전 암기: ${masteredCount()}
-■ 완료 DAY: ${doneDays.length}/${DAYS}
-■ 누적 정답률: ${accur}%
-■ 활성 오답 단어: ${wrongList().length}
-■ 누적 오답 발생: ${cumulativeWrongCount()}회
-■ 정복한 오답 단어: ${conqueredWrongCount()}
-■ 오늘 D+1·D+3·D+6 복습 대상: ${dueWrongList().length}
-■ 연속 학습: ${S.streak}일
-■ 레벨: Lv.${L.lv} ${L.name}
-■ 시험 응시: ${S.sessions.length}회
-─────────────────────────
-최근 시험 (5건)
-${S.sessions.slice(0,5).map(s=>`  ${fmtFull(s.login)} · D${s.day} · ${s.correct}/${s.total} · ${fmtDur(s.dur)}`).join('\n')||'  (없음)'}`;
-}
-function mailReport(){if(!emailJSReady){toast('메일 준비 중, 잠시 후 다시');initEmailJS();return;}
- toast('보고서 발송 중...');const pct=Math.round(seenCount()/TOTAL*100);const totQ=S.quizStat.done;const accur=totQ?Math.round(S.quizStat.correct/totQ*100):0;const L=levelInfo();
- const hist=S.sessions.slice(0,10).map(s=>`${fmtFull(s.login)} · D${s.day} · ${s.correct}/${s.total} · ${fmtDur(s.dur)}`).join('\n')||'(없음)',summary=reportSummary();
- emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{to_email:ADMIN_EMAIL,user_name:'학습자',report_date:new Date().toLocaleString('ko-KR'),progress:pct,mastered:masteredCount(),accuracy:accur,streak:S.streak,total_xp:S.xp,level:L.lv,level_name:L.name,history_count:Math.min(10,S.sessions.length),recent_history:summary+'\n\n최근 시험\n'+hist,report_text:summary,message:summary,active_wrong:wrongList().length,cumulative_wrong:cumulativeWrongCount(),conquered_wrong:conqueredWrongCount()}).then(()=>toast('✓ 관리자에게 발송 완료')).catch(e=>{console.error(e);toast('⚠ 발송 실패 · 설정 확인');});
-}
+/* ===== 진도 내보내기 ===== */
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);toast('내려받기');}
 function downloadCSV(){let rows=[['DAY','학습단어','전체','학습률(%)','시험횟수','최고점(%)','활성오답수','누적오답횟수','상태']];
- for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dayCumulativeWrongCount(d),S.dayDone[d]?'완료·보고됨':(S.pendingCompletion&&S.pendingCompletion.day===d)?'보고 대기':dp.seen?'진행':'미시작']);}
+ for(let d=1;d<=DAYS;d++){const dp=dayProgress(d);const lg=S.dayLog[d]||{};const wn=wordsOf(d).filter(w=>S.wrong[w[0]]>0).length;rows.push([d,dp.seen,dp.total,Math.round(dp.seen/dp.total*100),lg.quizzes||0,lg.bestPct||'',wn,dayCumulativeWrongCount(d),S.dayDone[d]?'완료':dp.seen?'진행':'미시작']);}
  dl(`2000_18DAY_DAY별_${today()}.csv`,'\uFEFF'+rows.map(r=>r.join(',')).join('\n'),'text/csv;charset=utf-8');}
 function downloadLogsCSV(){let rows=[['접속시각','DAY','유형','소요시간(초)','정답','총문항','정답률(%)']];S.sessions.forEach(s=>{rows.push([fmtFull(s.login),s.day||'오답',s.type,s.dur,s.correct,s.total,s.total?Math.round(s.correct/s.total*100):0]);});dl(`2000_18DAY_시험기록_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
 function downloadWrongHistoryCSV(){let rows=[['일시','단어ID','단어','DAY','이벤트','단계','활성오답횟수','누적오답횟수','비고']];(S.wrongHistory||[]).forEach(x=>rows.push([x.date?new Date(x.date).toLocaleString('ko-KR'):'',x.id||'',x.word||'',x.day||'',x.event||'',x.phase||'',x.activeCount||0,x.totalWrongCount||0,x.note||'']));dl(`2000_18DAY_오답이력_${today()}.csv`,'\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv;charset=utf-8');}
@@ -1227,17 +1150,14 @@ function restoreJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileR
 
 /* ===== global keyboard ===== */
 document.addEventListener('keydown',e=>{
- if(document.querySelector('.wrong-reveal')||document.querySelector('.completion-gate')||(SESS&&SESS.blocked))return;
  if($('#loginScreen').style.display!=='none'){if(/[0-9]/.test(e.key))pinPress(e.key);else if(e.key==='Backspace')pinPress('del');return;}
  if(cur==='Study'&&$('#flash')){if(e.code==='Space'){e.preventDefault();flip();}else if(e.key==='ArrowRight'){e.preventDefault();fNext(null);}else if(e.key==='ArrowLeft'){e.preventDefault();fPrev();}}
 });
 
 /* ===== init ===== */
-syncScheduleState();initEmailJS();window.addEventListener('load',initEmailJS);
+syncScheduleState();
 window.addEventListener('pagehide',()=>{save();scheduleCloudSave2000(true);});
-window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
-window.addEventListener('pageshow',()=>{if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();});
-window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;pendingCompletion=S.pendingCompletion||null;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();if(ROLE==='learner'&&S.pendingCompletion)restorePendingCompletionGate();}}catch(err){}}});
+window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){try{const incoming=normalizeState(JSON.parse(e.newValue));if((incoming.updatedAt||'')>(S.updatedAt||'')){S=incoming;renderSidebar();if(ROLE==='admin'&&cur==='Admin')renderAdmin();}}catch(err){}}});
 window.addEventListener('message',event=>{const data=event.data||{};if(data.channel!=='course-hub-command')return;if(data.type==='request-progress')sendHub2000('progress',hubDetail2000());if(data.type==='go-home'&&ROLE==='learner')go('Home');});
 buildKeypad();
 if(validHubLearnerSession2000()){

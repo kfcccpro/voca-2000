@@ -1,1 +1,1 @@
-voca-2000 저장소 최상위에 index.html, 2000_18DAY.html, .nojekyll을 덮어쓰십시오.
+GitHub voca-2000 저장소 최상위에 index.html, 2000_18DAY.html, .nojekyll을 덮어쓰세요. 이메일 기능은 제거되었고 DAY 학습 진도 완료만 저장됩니다.
